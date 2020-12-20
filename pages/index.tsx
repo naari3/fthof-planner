@@ -9,8 +9,10 @@ import {
   TableBody,
   TableRow,
   Paper,
+  Avatar,
 } from "@material-ui/core";
 import { FormControlLabel, Checkbox } from "@material-ui/core";
+import { Grid } from "@material-ui/core";
 
 import { useEffect, useState } from "react";
 import seedrandom from "seedrandom";
@@ -83,6 +85,7 @@ export default function Home() {
   const [rawSavedata, setRawSavedata] = useState("");
   const [savedata, setSavedata] = useState("");
   const [isError, setIsError] = useState(false);
+  const [loadAvatar, setLoadAvatar] = useState(false);
   const [goldenCookies, setGoldenCookies] = useState<
     [GoldenCookie, GoldenCookie][]
   >([]);
@@ -159,51 +162,73 @@ export default function Home() {
           </Button>
         </Box>
       </Box>
-      <TextField
-        type="number"
-        variant="outlined"
-        label="Lookahead"
-        defaultValue={lookahead}
-        InputLabelProps={{
-          shrink: true,
-        }}
-        inputProps={{
-          inputMode: "numeric",
-          pattern: "[0-9]*",
-          min: 0,
-        }}
-        onChange={(e) => {
-          setLookahead(parseInt(e.target.value));
-        }}
-      />
-      <TextField
-        type="number"
-        variant="outlined"
-        label="On Screen GoldenCookies"
-        defaultValue={onScreenCookies}
-        InputLabelProps={{
-          shrink: true,
-        }}
-        inputProps={{
-          inputMode: "numeric",
-          pattern: "[0-9]*",
-          min: 0,
-        }}
-        onChange={(e) => {
-          setOnScreenCookies(parseInt(e.target.value));
-        }}
-      />
-      <FormControlLabel
-        control={
-          <Checkbox
-            checked={isDragonFlight}
+      <Grid container spacing={2}>
+        <Grid item>
+          <TextField
+            type="number"
+            variant="outlined"
+            label="Lookahead"
+            value={lookahead}
+            InputLabelProps={{
+              shrink: true,
+            }}
+            inputProps={{
+              inputMode: "numeric",
+              pattern: "[0-9]*",
+              min: 0,
+            }}
             onChange={(e) => {
-              setIsDragonFlight(e.target.checked);
+              setLookahead(parseInt(e.target.value));
             }}
           />
-        }
-        label="DragonFlight Activated"
-      />
+        </Grid>
+        <Grid item>
+          <TextField
+            type="number"
+            variant="outlined"
+            label="On Screen GoldenCookies"
+            value={onScreenCookies}
+            InputLabelProps={{
+              shrink: true,
+            }}
+            inputProps={{
+              inputMode: "numeric",
+              pattern: "[0-9]*",
+              min: 0,
+            }}
+            onChange={(e) => {
+              setOnScreenCookies(parseInt(e.target.value));
+            }}
+          />
+        </Grid>
+        <Grid item>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={isDragonFlight}
+                onChange={(e) => {
+                  setIsDragonFlight(e.target.checked);
+                }}
+              />
+            }
+            label="DragonFlight Activated"
+          />
+        </Grid>
+        <Grid item>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={loadAvatar}
+                onChange={(e) => {
+                  setLoadAvatar(e.target.checked);
+                }}
+              />
+            }
+            label="Load Cookie Avatar"
+          />
+        </Grid>
+      </Grid>
+
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -219,7 +244,26 @@ export default function Home() {
                 <TableRow key={i}>
                   {[<TableCell key={`${i}_num`}>{i + 1}</TableCell>].concat(
                     gcs.map((gc, j) => (
-                      <TableCell key={`${i}_${j}`}>{gc.force}</TableCell>
+                      <TableCell key={`${i}_${j}`}>
+                        <Box display="flex">
+                          <Box>
+                            {loadAvatar ? (
+                              <Avatar
+                                src={
+                                  gc.wrath
+                                    ? "/WrathCookie.png"
+                                    : "/GoldenCookie.png"
+                                }
+                              />
+                            ) : (
+                              ""
+                            )}
+                          </Box>
+                          <Box flexGrow={1} m="auto">
+                            {gc.force}
+                          </Box>
+                        </Box>
+                      </TableCell>
                     ))
                   )}
                 </TableRow>
