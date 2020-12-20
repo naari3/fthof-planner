@@ -1,6 +1,6 @@
 import Head from "next/head";
 import Layout from "../components/layout";
-import { TextField, Button, Box } from "@material-ui/core";
+import { TextField, Button } from "@material-ui/core";
 import {
   Table,
   TableContainer,
@@ -147,22 +147,28 @@ export default function Home() {
 
   return (
     <Layout>
-      <Box display="flex" p={1}>
-        <Box flexGrow={1}>
+      <Head>
+        <title>FtHoF Planner</title>
+      </Head>
+      <Grid container spacing={2} alignItems="center">
+        <Grid item xs={11}>
           <TextField
             placeholder="savedata"
             error={isError}
             fullWidth={true}
             onChange={(e) => setRawSavedata(e.target.value)}
           />
-        </Box>
-        <Box>
-          <Button onClick={decodeSavedata} variant="contained" color="primary">
-            a
+        </Grid>
+        <Grid item xs={1}>
+          <Button
+            onClick={decodeSavedata}
+            variant="contained"
+            color="primary"
+            fullWidth={true}
+          >
+            GO
           </Button>
-        </Box>
-      </Box>
-      <Grid container spacing={2}>
+        </Grid>
         <Grid item>
           <TextField
             type="number"
@@ -227,60 +233,62 @@ export default function Home() {
             label="Load Cookie Avatar"
           />
         </Grid>
-      </Grid>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>#</TableCell>
-              <TableCell>A</TableCell>
-              <TableCell>B</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {goldenCookies.map((gcs, i) => {
-              return (
-                <TableRow key={i}>
-                  {[<TableCell key={`${i}_num`}>{i + 1}</TableCell>].concat(
-                    gcs.map((gc, j) => (
-                      <TableCell key={`${i}_${j}`}>
-                        <Box display="flex">
-                          <Box>
-                            {loadAvatar ? (
-                              <Avatar
-                                src={
-                                  gc.wrath
-                                    ? "/WrathCookie.png"
-                                    : "/GoldenCookie.png"
-                                }
-                              />
-                            ) : (
-                              ""
-                            )}
-                          </Box>
-                          <Box flexGrow={1} m="auto">
-                            {gc.force}
-                          </Box>
-                        </Box>
-                      </TableCell>
-                    ))
-                  )}
+        <Grid item xs={12}>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>#</TableCell>
+                  <TableCell>A</TableCell>
+                  <TableCell>B</TableCell>
                 </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <Button
-        onClick={() => {
-          setLookahead(lookahead + 10);
-        }}
-        variant="contained"
-        color="primary"
-      >
-        Load more
-      </Button>
+              </TableHead>
+              <TableBody>
+                {goldenCookies.map((gcs, i) => {
+                  return (
+                    <TableRow key={i}>
+                      {[<TableCell key={`${i}_num`}>{i + 1}</TableCell>].concat(
+                        gcs.map((gc, j) => (
+                          <TableCell key={`${i}_${j}`}>
+                            <Grid container spacing={2} alignItems="center">
+                              <Grid item>
+                                {loadAvatar ? (
+                                  <Avatar
+                                    src={
+                                      gc.wrath
+                                        ? "/WrathCookie.png"
+                                        : "/GoldenCookie.png"
+                                    }
+                                  />
+                                ) : (
+                                  ""
+                                )}
+                              </Grid>
+                              <Grid item>{gc.force}</Grid>
+                            </Grid>
+                          </TableCell>
+                        ))
+                      )}
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Grid>
+        <Grid item xs={12}>
+          <Button
+            onClick={() => {
+              setLookahead(lookahead + 10);
+            }}
+            variant="contained"
+            color="primary"
+          >
+            Load more
+          </Button>
+        </Grid>
+      </Grid>
     </Layout>
   );
 }

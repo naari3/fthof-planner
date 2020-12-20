@@ -8,9 +8,8 @@ export default function Layout({ children }) {
           <Typography>fthof-planner</Typography>
         </Toolbar>
       </AppBar>
-      <Container>
-        <main>{children}</main>
-      </Container>
+      <div style={{ height: "12px" }}></div>
+      <Container>{children}</Container>
     </>
   );
 }

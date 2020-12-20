@@ -6,6 +6,7 @@ import {
   StylesProvider,
 } from "@material-ui/styles";
 import CssBaseline from "@material-ui/core/CssBaseline";
+import "fontsource-roboto";
 
 import theme from "../styles/theme";
 
