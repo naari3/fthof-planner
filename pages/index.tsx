@@ -96,7 +96,7 @@ export default function Home() {
   const decodeSavedata = () => {
     try {
       const decoded = new TextDecoder().decode(
-        base64.toByteArray(rawSavedata.split("%21END%21")[0])
+        base64.toByteArray(decodeURIComponent(rawSavedata).split("!END!")[0])
       );
       setSavedata(decoded);
       setIsError(false);
