@@ -90,6 +90,8 @@ export default function Home() {
     [GoldenCookie, GoldenCookie][]
   >([]);
   const [lookahead, setLookahead] = useState(10);
+  const [spellsCastTotal, setSpellsCastTotal] = useState(0);
+  const [spellsCast, setSpellsCast] = useState(0);
   const [onScreenCookies, setOnScreenCookies] = useState(0);
   const [isDragonFlight, setIsDragonFlight] = useState(false);
 
@@ -112,27 +114,31 @@ export default function Home() {
       const data = savedata.split("|");
       const seed = data[2].split(";")[4];
       const ascensionMode = parseInt(data[4].split(";")[29]);
-      const spellsCastTotal = parseInt(data[5].split(";")[7].split(" ")[2]);
-      console.log({ data, seed, ascensionMode, spellsCastTotal });
+      const _spellsCast = parseInt(data[5].split(";")[7].split(" ")[1]);
+      const _spellsCastTotal = parseInt(data[5].split(";")[7].split(" ")[2]);
+      console.log({ data, seed, ascensionMode, _spellsCastTotal });
+
+      setSpellsCast(_spellsCast);
+      setSpellsCastTotal(_spellsCastTotal);
 
       const defaultOptions = {
         seed,
-        onScreenCookies,
+        onScreenCookies: onScreenCookies || 0,
         ascensionMode,
         dragonFlight: isDragonFlight,
       };
 
       setGoldenCookies(
-        [...Array(lookahead)].map((_, i) => {
+        [...Array(lookahead || 0)].map((_, i) => {
           return [
             checkCookies({
               ...defaultOptions,
-              spells: spellsCastTotal + i,
+              spells: _spellsCastTotal + i,
               season: "",
             }),
             checkCookies({
               ...defaultOptions,
-              spells: spellsCastTotal + i,
+              spells: _spellsCastTotal + i,
               season: "easter",
             }),
           ];
@@ -155,6 +161,7 @@ export default function Home() {
           <TextField
             placeholder="savedata"
             error={isError}
+            helperText={isError && "Invalid savedata"}
             fullWidth={true}
             onChange={(e) => setRawSavedata(e.target.value)}
           />
@@ -248,7 +255,11 @@ export default function Home() {
                 {goldenCookies.map((gcs, i) => {
                   return (
                     <TableRow key={i}>
-                      {[<TableCell key={`${i}_num`}>{i + 1}</TableCell>].concat(
+                      {[
+                        <TableCell key={`${i}_num`}>
+                          {i + 1 + spellsCast} ({spellsCastTotal + i + 1})
+                        </TableCell>,
+                      ].concat(
                         gcs.map((gc, j) => (
                           <TableCell key={`${i}_${j}`}>
                             <Grid container spacing={2} alignItems="center">
