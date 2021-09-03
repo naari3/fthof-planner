@@ -180,10 +180,8 @@ export default function Home() {
         </Grid>
 
         <Grid item xs={12}>
-          <Typography variant="body1">No Change: Plain state</Typography>
-          <Typography variant="body1">
-            One Change: Season is Easter or Valentines
-          </Typography>
+          <p>No Change: Plain state</p>
+          <p>One Change: Season is Easter or Valentines</p>
         </Grid>
 
         <Grid item xs={12}>
