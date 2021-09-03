@@ -1,9 +1,9 @@
-export type GoldenCookie = {
+export type GoldenCookieType = {
   force: string;
   wrath: boolean;
 };
 
-const gcDict: { [k: string]: GoldenCookie } = {
+const gcDict: { [k: string]: GoldenCookieType } = {
   frenzy: { force: "Frenzy", wrath: false },
   "multiply cookies": { force: "Lucky", wrath: false },
   "click frenzy": { force: "Click Frenzy", wrath: false },
@@ -18,6 +18,6 @@ const gcDict: { [k: string]: GoldenCookie } = {
   "blood frenzy": { force: "Elder frenzy", wrath: true },
 };
 
-export function getGoldenCookie(force: keyof typeof gcDict): GoldenCookie {
+export function getGoldenCookie(force: keyof typeof gcDict): GoldenCookieType {
   return gcDict[force];
 }

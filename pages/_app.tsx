@@ -1,11 +1,8 @@
 import React, { useEffect } from "react";
 
 import { ThemeProvider as StyledComponentsThemeProvider } from "styled-components";
-import {
-  ThemeProvider as MaterialUIThemeProvider,
-  StylesProvider,
-} from "@material-ui/styles";
-import CssBaseline from "@material-ui/core/CssBaseline";
+import { ThemeProvider as MUIThemeProvider, StylesProvider } from "@mui/styles";
+import CssBaseline from "@mui/material/CssBaseline";
 import "fontsource-roboto";
 
 import theme from "../styles/theme";
@@ -21,12 +18,12 @@ const MyApp = ({ Component, pageProps }): JSX.Element => {
 
   return (
     <StylesProvider injectFirst>
-      <MaterialUIThemeProvider theme={theme}>
+      <MUIThemeProvider theme={theme}>
         <StyledComponentsThemeProvider theme={theme}>
           <CssBaseline />
           <Component {...pageProps} />
         </StyledComponentsThemeProvider>
-      </MaterialUIThemeProvider>
+      </MUIThemeProvider>
     </StylesProvider>
   );
 };

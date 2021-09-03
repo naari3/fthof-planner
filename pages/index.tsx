@@ -1,6 +1,6 @@
 import Head from "next/head";
 import Layout from "../components/layout";
-import { TextField, Button, Typography } from "@material-ui/core";
+import { TextField, Button } from "@mui/material";
 import {
   Table,
   TableContainer,
@@ -9,15 +9,15 @@ import {
   TableBody,
   TableRow,
   Paper,
-  Avatar,
-} from "@material-ui/core";
-import { FormControlLabel, Checkbox } from "@material-ui/core";
-import { Grid } from "@material-ui/core";
+} from "@mui/material";
+import { FormControlLabel, Checkbox } from "@mui/material";
+import { Grid } from "@mui/material";
 
 import { useEffect, useState } from "react";
 import base64 from "base64-js";
-import type { GoldenCookie } from "../lib/GoldenCookie";
+import type { GoldenCookieType } from "../lib/GoldenCookie";
 import { checkCookies } from "../lib/fthofCheck";
+import GoldenCookie from "../components/GoldenCookie";
 
 export default function Home() {
   const [rawSavedata, setRawSavedata] = useState("");
@@ -25,7 +25,7 @@ export default function Home() {
   const [isError, setIsError] = useState(false);
   const [loadAvatar, setLoadAvatar] = useState(false);
   const [goldenCookies, setGoldenCookies] = useState<
-    [GoldenCookie, GoldenCookie][]
+    [GoldenCookieType, GoldenCookieType][]
   >([]);
   const [lookahead, setLookahead] = useState(10);
   const [spellsCastTotal, setSpellsCastTotal] = useState(0);
@@ -206,20 +206,11 @@ export default function Home() {
                         gcs.map((gc, j) => (
                           <TableCell key={`${i}_${j}`}>
                             <Grid container spacing={2} alignItems="center">
-                              <Grid item>
-                                {loadAvatar ? (
-                                  <Avatar
-                                    src={
-                                      gc.wrath
-                                        ? "/WrathCookie.png"
-                                        : "/GoldenCookie.png"
-                                    }
-                                  />
-                                ) : (
-                                  ""
-                                )}
-                              </Grid>
-                              <Grid item>{gc.force}</Grid>
+                              <GoldenCookie
+                                gc={gc}
+                                loadAvatar={loadAvatar}
+                                highlight={gc.force == "Click Frenzy"}
+                              />
                             </Grid>
                           </TableCell>
                         ))

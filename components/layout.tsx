@@ -1,4 +1,4 @@
-import { Container, AppBar, Typography, Toolbar } from "@material-ui/core";
+import { Container, AppBar, Typography, Toolbar } from "@mui/material";
 
 export default function Layout({ children }) {
   return (

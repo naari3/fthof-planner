@@ -1,4 +1,4 @@
-import type { GoldenCookie } from "../lib/GoldenCookie";
+import type { GoldenCookieType } from "../lib/GoldenCookie";
 import seedrandom from "seedrandom";
 import choose from "../lib/choose";
 import { getGoldenCookie } from "../lib/GoldenCookie";
@@ -16,7 +16,7 @@ const checkCookies = ({
   onScreenCookies: number;
   ascensionMode: number;
   dragonFlight: boolean;
-}): GoldenCookie => {
+}): GoldenCookieType => {
   const srnd = seedrandom(`${seed}/${spells}`);
   const roll = srnd();
   let force: string = null;

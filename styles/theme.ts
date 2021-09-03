@@ -1,5 +1,5 @@
-import { createMuiTheme } from "@material-ui/core";
-const theme = createMuiTheme({
+import { createTheme } from "@mui/material/styles";
+const theme = createTheme({
   // :thinking_face:
   shadows: [
     "none",
@@ -29,4 +29,5 @@ const theme = createMuiTheme({
     "none",
   ],
 });
+
 export default theme;
