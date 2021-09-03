@@ -21,11 +21,12 @@ const checkCookies = ({
   const roll = srnd();
   let force: string = null;
   if (roll < 1 - 0.15 * (onScreenCookies + 1)) {
+    // M.Spells['hand of fate'] win
     // Game.shimmerTypes.golden.initFunc
     // if (chime && ascensionMode !== 1) srnd();
+    srnd();
+    srnd();
     if (season === "valentines" || season === "easter") srnd();
-    srnd();
-    srnd();
     // Game.shimmerTypes.golden.initFunc end
 
     const choices = ["frenzy", "multiply cookies"];
@@ -41,11 +42,12 @@ const checkCookies = ({
     if (srnd() < 0.0001) choices.push("free sugar lump");
     force = choose(choices, srnd);
   } else {
+    // M.Spells['hand of fate'] fail
     // Game.shimmerTypes.golden.initFunc
     // if (chime && ascensionMode !== 1) srnd();
+    srnd();
+    srnd();
     if (season === "valentines" || season === "easter") srnd();
-    srnd();
-    srnd();
     // Game.shimmerTypes.golden.initFunc end
 
     const choices = ["clot", "ruin cookies"];
