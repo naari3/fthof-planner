@@ -1,6 +1,6 @@
 import Head from "next/head";
 import Layout from "../components/layout";
-import { TextField, Button } from "@material-ui/core";
+import { TextField, Button, Typography } from "@material-ui/core";
 import {
   Table,
   TableContainer,
@@ -180,13 +180,20 @@ export default function Home() {
         </Grid>
 
         <Grid item xs={12}>
+          <Typography variant="body1">No Change: Plain state</Typography>
+          <Typography variant="body1">
+            One Change: Season is Easter or Valentines
+          </Typography>
+        </Grid>
+
+        <Grid item xs={12}>
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
                 <TableRow>
                   <TableCell>#</TableCell>
-                  <TableCell>A</TableCell>
-                  <TableCell>B</TableCell>
+                  <TableCell>No Change</TableCell>
+                  <TableCell>One Change</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
