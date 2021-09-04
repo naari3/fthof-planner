@@ -19,7 +19,11 @@ export default function GoldenCookie({ gc, loadAvatar, highlight }: Props) {
         )}
       </Grid>
       <Grid item>
-        <Typography style={highlight ? { color: "white" } : {}} align="center">
+        <Typography
+          //   color="textPrimary"
+          style={highlight ? { color: "white" } : {}}
+          align="center"
+        >
           {gc.force}
         </Typography>
       </Grid>

@@ -10,7 +10,7 @@ import {
   TableRow,
   Paper,
 } from "@mui/material";
-import { FormControlLabel, Checkbox, useTheme } from "@mui/material";
+import { FormControlLabel, Checkbox } from "@mui/material";
 import { Grid } from "@mui/material";
 
 import { useEffect, useState } from "react";
@@ -209,7 +209,10 @@ export default function Home() {
                             loadAvatar={loadAvatar}
                             index={`${i}_${j}`}
                             key={`${i}_${j}`}
-                            highlight={gc.force == "Click Frenzy"}
+                            highlight={
+                              gc.force == "Click Frenzy" ||
+                              gc.force == "Building Special"
+                            }
                           />
                         ))
                       )}
