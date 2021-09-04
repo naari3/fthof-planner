@@ -1,4 +1,4 @@
-import { Grid, Avatar, Box, Typography } from "@mui/material";
+import { Grid, Avatar, Typography } from "@mui/material";
 
 import { GoldenCookieType } from "../lib/GoldenCookie";
 
@@ -18,13 +18,11 @@ export default function GoldenCookie({ gc, loadAvatar, highlight }: Props) {
           ""
         )}
       </Grid>
-      <Box bgcolor={highlight ? "warning.main" : ""}>
-        <Grid item>
-          <Typography style={highlight ? { color: "white" } : {}}>
-            <p>{gc.force}</p>
-          </Typography>
-        </Grid>
-      </Box>
+      <Grid item>
+        <Typography style={highlight ? { color: "white" } : {}} align="center">
+          {gc.force}
+        </Typography>
+      </Grid>
     </>
   );
 }

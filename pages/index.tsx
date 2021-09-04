@@ -10,14 +10,14 @@ import {
   TableRow,
   Paper,
 } from "@mui/material";
-import { FormControlLabel, Checkbox } from "@mui/material";
+import { FormControlLabel, Checkbox, useTheme } from "@mui/material";
 import { Grid } from "@mui/material";
 
 import { useEffect, useState } from "react";
 import base64 from "base64-js";
 import type { GoldenCookieType } from "../lib/GoldenCookie";
 import { checkCookies } from "../lib/fthofCheck";
-import GoldenCookie from "../components/GoldenCookie";
+import GoldenCookieCell from "../components/GoldenCookieCell";
 
 export default function Home() {
   const [rawSavedata, setRawSavedata] = useState("");
@@ -204,15 +204,13 @@ export default function Home() {
                         </TableCell>,
                       ].concat(
                         gcs.map((gc, j) => (
-                          <TableCell key={`${i}_${j}`}>
-                            <Grid container spacing={2} alignItems="center">
-                              <GoldenCookie
-                                gc={gc}
-                                loadAvatar={loadAvatar}
-                                highlight={gc.force == "Click Frenzy"}
-                              />
-                            </Grid>
-                          </TableCell>
+                          <GoldenCookieCell
+                            gc={gc}
+                            loadAvatar={loadAvatar}
+                            index={`${i}_${j}`}
+                            key={`${i}_${j}`}
+                            highlight={gc.force == "Click Frenzy"}
+                          />
                         ))
                       )}
                     </TableRow>
