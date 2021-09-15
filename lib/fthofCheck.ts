@@ -1,4 +1,4 @@
-import type { GoldenCookieType } from "../lib/GoldenCookie";
+import type { ForceKey, GoldenCookieType } from "../lib/GoldenCookie";
 import seedrandom from "seedrandom";
 import choose from "../lib/choose";
 import { getGoldenCookie } from "../lib/GoldenCookie";
@@ -19,7 +19,7 @@ const checkCookies = ({
 }): GoldenCookieType => {
   const srnd = seedrandom(`${seed}/${spells}`);
   const roll = srnd();
-  let force: string = null;
+  let force: ForceKey = null;
   if (roll < 1 - 0.15 * (onScreenCookies + 1)) {
     // M.Spells['hand of fate'] win
     // Game.shimmerTypes.golden.initFunc
@@ -29,7 +29,7 @@ const checkCookies = ({
     if (season === "valentines" || season === "easter") srnd();
     // Game.shimmerTypes.golden.initFunc end
 
-    const choices = ["frenzy", "multiply cookies"];
+    const choices: ForceKey[] = ["frenzy", "multiply cookies"];
     if (!dragonFlight) choices.push("click frenzy");
     if (srnd() < 0.1) choices.push("cookie storm", "cookie storm", "blab");
     if (srnd() < 0.25) choices.push("building special");
@@ -50,7 +50,7 @@ const checkCookies = ({
     if (season === "valentines" || season === "easter") srnd();
     // Game.shimmerTypes.golden.initFunc end
 
-    const choices = ["clot", "ruin cookies"];
+    const choices: ForceKey[] = ["clot", "ruin cookies"];
     if (srnd() < 0.1) choices.push("cursed finger", "blood frenzy");
     if (srnd() < 0.003) choices.push("free sugar lump");
     if (srnd() < 0.1) {

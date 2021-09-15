@@ -16,8 +16,8 @@ import { Grid } from "@mui/material";
 import { useEffect, useState } from "react";
 import base64 from "base64-js";
 import type { GoldenCookieType } from "../lib/GoldenCookie";
-import { checkCookies } from "../lib/fthofCheck";
 import GoldenCookieCell from "../components/GoldenCookieCell";
+import Predictor from "../lib/Predictor";
 
 export default function Home() {
   const [rawSavedata, setRawSavedata] = useState("");
@@ -64,23 +64,13 @@ export default function Home() {
         onScreenCookies: onScreenCookies || 0,
         ascensionMode,
         dragonFlight: isDragonFlight,
+        spells: _spellsCastTotal,
       };
 
+      const predictor = new Predictor(defaultOptions);
+
       setGoldenCookies(
-        [...Array(lookahead || 0)].map((_, i) => {
-          return [
-            checkCookies({
-              ...defaultOptions,
-              spells: _spellsCastTotal + i,
-              season: "",
-            }),
-            checkCookies({
-              ...defaultOptions,
-              spells: _spellsCastTotal + i,
-              season: "easter",
-            }),
-          ];
-        })
+        new Array(lookahead).fill(null).map(() => predictor.next().value)
       );
       setIsError(false);
     } catch (error) {

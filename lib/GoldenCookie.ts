@@ -3,7 +3,7 @@ export type GoldenCookieType = {
   wrath: boolean;
 };
 
-type ForceKey =
+export type ForceKey =
   | "frenzy"
   | "multiply cookies"
   | "click frenzy"
@@ -17,7 +17,7 @@ type ForceKey =
   | "cursed finger"
   | "blood frenzy";
 
-type Force =
+export type Force =
   | "Frenzy"
   | "Lucky"
   | "Click Frenzy"
