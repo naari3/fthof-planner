@@ -210,8 +210,9 @@ export default function Home() {
                             index={`${i}_${j}`}
                             key={`${i}_${j}`}
                             highlight={
-                              gc.force == "Click Frenzy" ||
-                              gc.force == "Building Special"
+                              gc.force === "Click Frenzy" ||
+                              gc.force === "Building Special" ||
+                              gc.force === "Elder frenzy"
                             }
                           />
                         ))

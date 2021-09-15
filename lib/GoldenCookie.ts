@@ -1,9 +1,37 @@
 export type GoldenCookieType = {
-  force: string;
+  force: Force;
   wrath: boolean;
 };
 
-const gcDict: { [k: string]: GoldenCookieType } = {
+type ForceKey =
+  | "frenzy"
+  | "multiply cookies"
+  | "click frenzy"
+  | "cookie storm"
+  | "blab"
+  | "building special"
+  | "cookie storm drop"
+  | "free sugar lump"
+  | "clot"
+  | "ruin cookies"
+  | "cursed finger"
+  | "blood frenzy";
+
+type Force =
+  | "Frenzy"
+  | "Lucky"
+  | "Click Frenzy"
+  | "Cookie Storm"
+  | "Blab"
+  | "Building Special"
+  | "Cookie Storm Drop"
+  | "Free Sugar Lump"
+  | "Clot"
+  | "Ruin"
+  | "Cursed finger"
+  | "Elder frenzy";
+
+const gcDict: { [k in ForceKey]: GoldenCookieType } = {
   frenzy: { force: "Frenzy", wrath: false },
   "multiply cookies": { force: "Lucky", wrath: false },
   "click frenzy": { force: "Click Frenzy", wrath: false },

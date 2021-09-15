@@ -24,7 +24,10 @@ export default function GoldenCookieCell({
       style={
         highlight
           ? {
-              backgroundColor: theme.palette.warning.main,
+              backgroundColor:
+                gc.force !== "Elder frenzy"
+                  ? theme.palette.warning.main
+                  : theme.palette.secondary.main,
             }
           : {}
       }
