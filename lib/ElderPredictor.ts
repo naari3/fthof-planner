@@ -51,7 +51,7 @@ export default class ElderPredictor implements IterableIterator<Step[]> {
             if (cached === undefined) this.cache[key] = gc;
             return gc;
           }),
-          seasons: seasons.map((v) => (v ? "" : "easter")),
+          seasons,
           onScreens: onCookies,
         };
       })
