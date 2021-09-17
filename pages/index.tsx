@@ -68,10 +68,54 @@ export default function Home() {
       };
 
       const predictor = new Predictor(defaultOptions);
+      const predictor2 = new Predictor(defaultOptions);
 
       setGoldenCookies(
         new Array(lookahead).fill(null).map(() => predictor.next().value)
       );
+
+      let count = 0;
+      const forset: GoldenCookieType[][] = [];
+      for (const gcs of predictor2) {
+        count += 1;
+
+        forset.push(gcs);
+        if (forset.length > 4) forset.shift();
+
+        const sets: GoldenCookieType[][] = [];
+
+        forset.forEach((pred, i) => {
+          if (i === 0) {
+            // 先頭2つだけ
+            pred.forEach((gc) => {
+              sets.push([gc]);
+            });
+          } else {
+            sets.forEach((set) => {
+              const original = [...set];
+              pred.forEach((gc, j) => {
+                if (j === 0) {
+                  set.push(gc);
+                } else {
+                  sets.push([...original, gc]);
+                }
+              });
+            });
+          }
+        });
+
+        const condition = sets.some(
+          (set) =>
+            set.some((gc) => gc.force === "Elder frenzy") &&
+            set.some((gc) => gc.force === "Click Frenzy") &&
+            set.filter((gc) => gc.force === "Building Special").length === 2
+        );
+
+        if (condition || count > 10000) {
+          console.log(count);
+          break;
+        }
+      }
       setIsError(false);
     } catch (error) {
       console.error(error);

@@ -11,6 +11,15 @@ export default class Predictor implements IterableIterator<GoldenCookieType[]> {
     Object.assign(this, init);
   }
 
+  clone(): Predictor {
+    return new Predictor({
+      seed: this.seed,
+      onScreenCookies: this.onScreenCookies,
+      spells: this.spells,
+      dragonFlight: this.dragonFlight,
+    });
+  }
+
   [Symbol.iterator](): IterableIterator<GoldenCookieType[]> {
     return this;
   }
