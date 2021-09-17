@@ -18,6 +18,7 @@ import base64 from "base64-js";
 import type { GoldenCookieType } from "../lib/GoldenCookie";
 import GoldenCookieCell from "../components/GoldenCookieCell";
 import Predictor from "../lib/Predictor";
+import ComboSearcher from "../components/ComboSearcher";
 
 export default function Home() {
   const [rawSavedata, setRawSavedata] = useState("");
@@ -28,6 +29,7 @@ export default function Home() {
     [GoldenCookieType, GoldenCookieType][]
   >([]);
   const [lookahead, setLookahead] = useState(10);
+  const [seed, setSeed] = useState("");
   const [spellsCastTotal, setSpellsCastTotal] = useState(0);
   const [spellsCast, setSpellsCast] = useState(0);
   const [onScreenCookies, setOnScreenCookies] = useState(0);
@@ -50,17 +52,18 @@ export default function Home() {
     if (savedata === "") return;
     try {
       const data = savedata.split("|");
-      const seed = data[2].split(";")[4];
+      const _seed = data[2].split(";")[4];
       const ascensionMode = parseInt(data[4].split(";")[29]);
       const _spellsCast = parseInt(data[5].split(";")[7].split(" ")[1]);
       const _spellsCastTotal = parseInt(data[5].split(";")[7].split(" ")[2]);
-      console.log({ data, seed, ascensionMode, _spellsCastTotal });
+      console.log({ data, _seed, ascensionMode, _spellsCastTotal });
 
+      setSeed(_seed);
       setSpellsCast(_spellsCast);
       setSpellsCastTotal(_spellsCastTotal);
 
       const defaultOptions = {
-        seed,
+        seed: _seed,
         onScreenCookies: onScreenCookies || 0,
         ascensionMode,
         dragonFlight: isDragonFlight,
@@ -68,54 +71,11 @@ export default function Home() {
       };
 
       const predictor = new Predictor(defaultOptions);
-      const predictor2 = new Predictor(defaultOptions);
 
       setGoldenCookies(
         new Array(lookahead).fill(null).map(() => predictor.next().value)
       );
 
-      let count = 0;
-      const forset: GoldenCookieType[][] = [];
-      for (const gcs of predictor2) {
-        count += 1;
-
-        forset.push(gcs);
-        if (forset.length > 4) forset.shift();
-
-        const sets: GoldenCookieType[][] = [];
-
-        forset.forEach((pred, i) => {
-          if (i === 0) {
-            // 先頭2つだけ
-            pred.forEach((gc) => {
-              sets.push([gc]);
-            });
-          } else {
-            sets.forEach((set) => {
-              const original = [...set];
-              pred.forEach((gc, j) => {
-                if (j === 0) {
-                  set.push(gc);
-                } else {
-                  sets.push([...original, gc]);
-                }
-              });
-            });
-          }
-        });
-
-        const condition = sets.some(
-          (set) =>
-            set.some((gc) => gc.force === "Elder frenzy") &&
-            set.some((gc) => gc.force === "Click Frenzy") &&
-            set.filter((gc) => gc.force === "Building Special").length === 2
-        );
-
-        if (condition || count > 10000) {
-          console.log(count);
-          break;
-        }
-      }
       setIsError(false);
     } catch (error) {
       console.error(error);
@@ -210,6 +170,15 @@ export default function Home() {
               />
             }
             label="Load Cookie Avatar"
+          />
+        </Grid>
+
+        <Grid item xs={12}>
+          <ComboSearcher
+            seed={seed}
+            spellsCast={spellsCast}
+            spellsCastTotal={spellsCastTotal}
+            loadAvatar={loadAvatar}
           />
         </Grid>
 
