@@ -214,7 +214,9 @@ export default function ComboSearcher({
                               gc.force === "Elder frenzy"
                             }
                           />
-                          <TableCell key={`${i}_season`}>{season}</TableCell>
+                          <TableCell key={`${i}_season`}>
+                            {season === "easter" ? "Easter or Valentines" : ""}
+                          </TableCell>
                           <TableCell key={`${i}_ons`}>{onScrean}</TableCell>
                         </TableRow>
                       );
