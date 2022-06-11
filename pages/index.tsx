@@ -13,7 +13,7 @@ import {
 import { FormControlLabel, Checkbox } from "@mui/material";
 import { Grid } from "@mui/material";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import base64 from "base64-js";
 import type { GoldenCookieType } from "../lib/GoldenCookie";
 import GoldenCookieCell from "../components/GoldenCookieCell";
@@ -36,18 +36,27 @@ export default function Home() {
   const [isDragonFlight, setIsDragonFlight] = useState(false);
   const [isSupremeIntellect, setIsSupremeIntellect] = useState(false);
 
-  const decodeSavedata = () => {
+  const decodeSavedata = useCallback(() => {
     try {
       const decoded = new TextDecoder().decode(
         base64.toByteArray(decodeURIComponent(rawSavedata).split("!END!")[0])
       );
       setSavedata(decoded);
       setIsError(false);
+
+      const data = decoded.split("|");
+
+      const dragonAura1 = parseInt(data[4].split(";")[36]);
+      const dragonAura2 = parseInt(data[4].split(";")[37]);
+      const _isDragonFlight = dragonAura1 === 10 || dragonAura2 === 10;
+      const _isSupremeIntellect = dragonAura1 === 20 || dragonAura2 === 20;
+      setIsDragonFlight(_isDragonFlight);
+      setIsSupremeIntellect(_isSupremeIntellect);
     } catch (error) {
       console.error(error);
       setIsError(true);
     }
-  };
+  }, [rawSavedata, setSavedata, setIsError, setIsDragonFlight, setIsSupremeIntellect]);
 
   useEffect(() => {
     if (savedata === "") return;
@@ -89,6 +98,11 @@ export default function Home() {
     onScreenCookies,
     isDragonFlight,
     isSupremeIntellect,
+    setSeed,
+    setSpellsCast,
+    setSpellsCastTotal,
+    setIsDragonFlight,
+    setIsSupremeIntellect,
   ]);
 
   return (

@@ -5,7 +5,8 @@ export default function Layout({ children }) {
     <>
       <AppBar position="sticky">
         <Toolbar>
-          <Typography>fthof-planner</Typography>
+          <Typography sx={{ flexGrow: 1 }}>fthof-planner</Typography>
+          <Typography>Support for v 2.048</Typography>
         </Toolbar>
       </AppBar>
       <div style={{ height: "12px" }}></div>

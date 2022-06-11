@@ -22,8 +22,9 @@ const checkCookies = ({
   const srnd = seedrandom(`${seed}/${spells}`);
   const roll = srnd();
   let force: ForceKey = null;
-  const initFail = supremeIntellect ? 1.1 : 1;
-  if (roll < 1 - (initFail + 0.15 * (onScreenCookies + 1))) {
+  const initFail = 0.15 * (supremeIntellect ? 1.1 : 1);
+  const failChance = 1 - (initFail + 0.15 * onScreenCookies);
+  if (roll < failChance) {
     // M.Spells['hand of fate'] win
     // Game.shimmerTypes.golden.initFunc
     // if (chime && ascensionMode !== 1) srnd();
