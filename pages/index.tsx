@@ -171,7 +171,7 @@ export default function Home() {
           <FormControlLabel
             control={
               <Checkbox
-                checked={loadAvatar}
+                checked={isSupremeIntellect}
                 onChange={(e) => {
                   setIsSupremeIntellect(e.target.checked);
                 }}
