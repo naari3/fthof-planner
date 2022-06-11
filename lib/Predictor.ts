@@ -6,6 +6,7 @@ export default class Predictor implements IterableIterator<GoldenCookieType[]> {
   onScreenCookies: number;
   spells: number;
   dragonFlight: boolean;
+  supremeIntellect: boolean;
 
   constructor(init?: Partial<Predictor>) {
     Object.assign(this, init);
@@ -17,6 +18,7 @@ export default class Predictor implements IterableIterator<GoldenCookieType[]> {
       onScreenCookies: this.onScreenCookies,
       spells: this.spells,
       dragonFlight: this.dragonFlight,
+      supremeIntellect: this.supremeIntellect,
     });
   }
 
@@ -31,6 +33,7 @@ export default class Predictor implements IterableIterator<GoldenCookieType[]> {
       onScreenCookies: this.onScreenCookies,
       ascensionMode: 0,
       dragonFlight: this.dragonFlight,
+      supremeIntellect: this.supremeIntellect,
     };
     this.spells += 1;
 

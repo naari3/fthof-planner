@@ -34,6 +34,7 @@ export default function Home() {
   const [spellsCast, setSpellsCast] = useState(0);
   const [onScreenCookies, setOnScreenCookies] = useState(0);
   const [isDragonFlight, setIsDragonFlight] = useState(false);
+  const [isSupremeIntellect, setIsSupremeIntellect] = useState(false);
 
   const decodeSavedata = () => {
     try {
@@ -67,6 +68,7 @@ export default function Home() {
         onScreenCookies: onScreenCookies || 0,
         ascensionMode,
         dragonFlight: isDragonFlight,
+        supremeIntellect: isSupremeIntellect,
         spells: _spellsCastTotal,
       };
 
@@ -81,7 +83,7 @@ export default function Home() {
       console.error(error);
       setIsError(true);
     }
-  }, [savedata, lookahead, onScreenCookies, isDragonFlight]);
+  }, [savedata, lookahead, onScreenCookies, isDragonFlight, isSupremeIntellect]);
 
   return (
     <Layout>
@@ -157,6 +159,19 @@ export default function Home() {
               />
             }
             label="DragonFlight Activated"
+          />
+        </Grid>
+        <Grid item>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={loadAvatar}
+                onChange={(e) => {
+                  setIsSupremeIntellect(e.target.checked);
+                }}
+              />
+            }
+            label="Supreme Intellect Activated"
           />
         </Grid>
         <Grid item>

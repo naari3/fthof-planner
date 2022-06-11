@@ -9,6 +9,7 @@ const checkCookies = ({
   season,
   onScreenCookies,
   dragonFlight,
+  supremeIntellect,
 }: {
   seed: string;
   spells: number;
@@ -16,11 +17,13 @@ const checkCookies = ({
   onScreenCookies: number;
   ascensionMode: number;
   dragonFlight: boolean;
+  supremeIntellect: boolean;
 }): GoldenCookieType => {
   const srnd = seedrandom(`${seed}/${spells}`);
   const roll = srnd();
   let force: ForceKey = null;
-  if (roll < 1 - 0.15 * (onScreenCookies + 1)) {
+  const initFail = supremeIntellect ? 1.1 : 1;
+  if (roll < 1 - (initFail + 0.15 * (onScreenCookies + 1))) {
     // M.Spells['hand of fate'] win
     // Game.shimmerTypes.golden.initFunc
     // if (chime && ascensionMode !== 1) srnd();

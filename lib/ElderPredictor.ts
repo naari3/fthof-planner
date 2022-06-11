@@ -5,6 +5,7 @@ export default class ElderPredictor implements IterableIterator<Step[]> {
   seed: string;
   spells: number;
   dragonFlight: boolean;
+  supremeIntellect: boolean;
 
   private cache: { [key: string]: GoldenCookieType } = {};
 
@@ -46,6 +47,7 @@ export default class ElderPredictor implements IterableIterator<Step[]> {
                   ascensionMode: 0,
                   onScreenCookies: cs,
                   dragonFlight: this.dragonFlight,
+                  supremeIntellect: this.supremeIntellect,
                   season,
                 });
             if (cached === undefined) this.cache[key] = gc;
