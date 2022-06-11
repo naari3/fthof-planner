@@ -7,7 +7,7 @@ import NextDocument, {
   DocumentContext,
   DocumentInitialProps,
 } from "next/document";
-import { RenderPageResult } from "next/dist/next-server/lib/utils";
+import { RenderPageResult } from "next/dist/shared/lib/utils";
 import { ServerStyleSheet } from "styled-components";
 import { ServerStyleSheets as MaterialServerStyleSheets } from "@mui/styles";
 
@@ -22,14 +22,16 @@ export default class CustomDocument extends NextDocument {
     try {
       ctx.renderPage = (): RenderPageResult | Promise<RenderPageResult> =>
         originalRenderPage({
-          enhanceApp: (App) => (
-            props
-          ): React.ReactElement<{
-            sheet: ServerStyleSheet;
-          }> =>
-            styledComponentsSheet.collectStyles(
-              materialUiSheets.collect(<App {...props} />)
-            ),
+          enhanceApp:
+            (App) =>
+              (
+                props
+              ): React.ReactElement<{
+                sheet: ServerStyleSheet;
+              }> =>
+                styledComponentsSheet.collectStyles(
+                  materialUiSheets.collect(<App {...props} />)
+                ),
         });
 
       const initialProps = await NextDocument.getInitialProps(ctx);

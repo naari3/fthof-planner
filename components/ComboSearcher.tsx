@@ -69,9 +69,12 @@ export default function ComboSearcher({
         for (const step of steps) {
           const gcs = step.goldenCookies;
           if (
-            gcs.filter((gc) => gc.force === "Elder frenzy").length === elderFrenzy &&
-            gcs.filter((gc) => gc.force === "Click Frenzy").length === clickFrenzy &&
-            gcs.filter((gc) => gc.force === "Building Special").length === buildingSpecial
+            gcs.filter((gc) => gc.force === "Elder frenzy").length ===
+              elderFrenzy &&
+            gcs.filter((gc) => gc.force === "Click Frenzy").length ===
+              clickFrenzy &&
+            gcs.filter((gc) => gc.force === "Building Special").length ===
+              buildingSpecial
           ) {
             console.log(`found in ${count}`);
             console.log(step);

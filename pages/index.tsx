@@ -83,7 +83,13 @@ export default function Home() {
       console.error(error);
       setIsError(true);
     }
-  }, [savedata, lookahead, onScreenCookies, isDragonFlight, isSupremeIntellect]);
+  }, [
+    savedata,
+    lookahead,
+    onScreenCookies,
+    isDragonFlight,
+    isSupremeIntellect,
+  ]);
 
   return (
     <Layout>
