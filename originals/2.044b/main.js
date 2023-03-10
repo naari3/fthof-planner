@@ -336,7 +336,8 @@ var shortenNumber = function (val) {
 var SimpleBeautify = function (val) {
   var str = val.toString();
   var str2 = "";
-  for (var i in str) { //add commas
+  for (var i in str) {
+    //add commas
     if ((str.length - i) % 3 == 0 && i > 0) str2 += ",";
     str2 += str[i];
   }
@@ -3839,7 +3840,8 @@ Game.Launch = function () {
       if (type == 3)
         str +=
           "\n\nBuildings : amount, bought, cookies produced, level, minigame data";
-      for (var i in Game.Objects) { //buildings
+      for (var i in Game.Objects) {
+        //buildings
         var me = Game.Objects[i];
         if (type == 3) str += "\n	" + me.name + " : ";
         if (me.vanilla) {
@@ -3862,7 +3864,8 @@ Game.Launch = function () {
       if (type == 3)
         str += "\n\nPacked upgrades bitfield (unlocked and bought)\n	";
       var toCompress = [];
-      for (var i in Game.UpgradesById) { //upgrades
+      for (var i in Game.UpgradesById) {
+        //upgrades
         var me = Game.UpgradesById[i];
         if (me.vanilla)
           toCompress.push(Math.min(me.unlocked, 1), Math.min(me.bought, 1));
@@ -3874,7 +3877,8 @@ Game.Launch = function () {
       str += "|";
       if (type == 3) str += "\n\nPacked achievements bitfield (won)\n	";
       var toCompress = [];
-      for (var i in Game.AchievementsById) { //achievements
+      for (var i in Game.AchievementsById) {
+        //achievements
         var me = Game.AchievementsById[i];
         if (me.vanilla) toCompress.push(Math.min(me.won));
       }
@@ -5333,7 +5337,7 @@ Game.Launch = function () {
             '</div><div class="line"></div>' +
             desc;
         } else if (me.unlockAt.text) {
-        /*else if (me.unlockAt.season)
+          /*else if (me.unlockAt.season)
 				{
 					var it=Game.seasons[me.unlockAt.season];
 					desc='<div style="font-size:80%;text-align:center;">From <div class="icon" style="vertical-align:middle;display:inline-block;'+writeIcon(Game.Upgrades[it.trigger].icon)+'transform:scale(0.5);margin:-16px;"></div> '+it.dname+'</div><div class="line"></div>'+desc;
@@ -6039,7 +6043,8 @@ Game.Launch = function () {
           if (me.posY > Game.heavenlyBounds.bottom)
             Game.heavenlyBounds.bottom = me.posY;
         }
-        for (var ii in me.parents) { //create pulsing links
+        for (var ii in me.parents) {
+          //create pulsing links
           if (me.parents[ii] != -1 && (me.canBePurchased || ghosted)) {
             var origX = 0;
             var origY = 0;
@@ -9283,7 +9288,8 @@ Game.Launch = function () {
         var achievementsTotal = 0;
 
         var list = [];
-        for (var i in Game.Achievements) { //sort the achievements
+        for (var i in Game.Achievements) {
+          //sort the achievements
           list.push(Game.Achievements[i]);
         }
         var sortMap = function (a, b) {
@@ -16608,7 +16614,8 @@ Game.Launch = function () {
       }
       return num;
     };
-    for (var i in Game.eggDrops) { //scale egg prices to how many eggs you have
+    for (var i in Game.eggDrops) {
+      //scale egg prices to how many eggs you have
       Game.Upgrades[Game.eggDrops[i]].priceFunc = function () {
         return Math.pow(2, Game.GetHowManyEggs()) * 999;
       };
@@ -19167,7 +19174,8 @@ Game.Launch = function () {
       "Ichor syrup",
       "Wheat slims",
     ];
-    for (var i in gardenDrops) { //scale by CpS
+    for (var i in gardenDrops) {
+      //scale by CpS
       var it = Game.Upgrades[gardenDrops[i]];
       it.priceFunc = (function (cost) {
         return function () {
@@ -24612,7 +24620,8 @@ Game.Launch = function () {
         buff.maxTime = buff.time;
       } //create new buff
       else {
-        for (var i in obj) { //paste parameters onto buff
+        for (var i in obj) {
+          //paste parameters onto buff
           buff[i] = obj[i];
         }
         buff.maxTime = buff.time;
@@ -25819,7 +25828,8 @@ Game.Launch = function () {
         Game.santaLevels[i] = loc(Game.santaLevels[i]);
       }
     }
-    for (var i in Game.santaDrops) { //scale christmas upgrade prices with santa level
+    for (var i in Game.santaDrops) {
+      //scale christmas upgrade prices with santa level
       Game.Upgrades[Game.santaDrops[i]].priceFunc = function () {
         return Math.pow(3, Game.santaLevel) * 2525;
       };

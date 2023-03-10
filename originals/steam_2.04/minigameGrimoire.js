@@ -457,10 +457,10 @@ M.launch = function () {
       },
       "diminish ineptitude": {
         name: loc("Diminish Ineptitude"),
-        desc: loc("Spells backfire %1 times less for the next %2 minutes.", [
-          10,
-          5,
-        ]),
+        desc: loc(
+          "Spells backfire %1 times less for the next %2 minutes.",
+          [10, 5]
+        ),
         failDesc: loc(
           "Spells backfire %1 times more for the next %2 minutes.",
           [5, 10]

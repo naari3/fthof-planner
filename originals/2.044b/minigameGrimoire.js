@@ -38,8 +38,8 @@ M.launch = function () {
           );
           Game.Popup(
             '<div style="font-size:80%;">' +
-            loc("+%1!", loc("%1 cookie", LBeautify(val))) +
-            "</div>",
+              loc("+%1!", loc("%1 cookie", LBeautify(val))) +
+              "</div>",
             Game.mouseX,
             Game.mouseY
           );
@@ -53,12 +53,12 @@ M.launch = function () {
           Game.Notify(buff.name, buff.desc, buff.icon, 6);
           Game.Popup(
             '<div style="font-size:80%;">' +
-            loc("Backfire!") +
-            "<br>" +
-            loc("Summoning failed!") +
-            " " +
-            loc("Lost %1!", loc("%1 cookie", LBeautify(val))) +
-            "</div>",
+              loc("Backfire!") +
+              "<br>" +
+              loc("Summoning failed!") +
+              " " +
+              loc("Lost %1!", loc("%1 cookie", LBeautify(val))) +
+              "</div>",
             Game.mouseX,
             Game.mouseY
           );
@@ -110,10 +110,10 @@ M.launch = function () {
           newShimmer.force = choose(choices);
           Game.Popup(
             '<div style="font-size:80%;">' +
-            loc("Backfire!") +
-            "<br>" +
-            loc("Sinister fate!") +
-            "</div>",
+              loc("Backfire!") +
+              "<br>" +
+              loc("Sinister fate!") +
+              "</div>",
             Game.mouseX,
             Game.mouseY
           );
@@ -144,8 +144,8 @@ M.launch = function () {
           if (changed == 0) {
             Game.Popup(
               '<div style="font-size:80%;">' +
-              loc("No buffs to alter!") +
-              "</div>",
+                loc("No buffs to alter!") +
+                "</div>",
               Game.mouseX,
               Game.mouseY
             );
@@ -153,8 +153,8 @@ M.launch = function () {
           }
           Game.Popup(
             '<div style="font-size:80%;">' +
-            loc("Zap! Buffs lengthened.") +
-            "</div>",
+              loc("Zap! Buffs lengthened.") +
+              "</div>",
             Game.mouseX,
             Game.mouseY
           );
@@ -171,8 +171,8 @@ M.launch = function () {
           if (changed == 0) {
             Game.Popup(
               '<div style="font-size:80%;">' +
-              loc("No buffs to alter!") +
-              "</div>",
+                loc("No buffs to alter!") +
+                "</div>",
               Game.mouseX,
               Game.mouseY
             );
@@ -180,10 +180,10 @@ M.launch = function () {
           }
           Game.Popup(
             '<div style="font-size:80%;">' +
-            loc("Backfire!") +
-            "<br>" +
-            loc("Fizz! Buffs shortened.") +
-            "</div>",
+              loc("Backfire!") +
+              "<br>" +
+              loc("Fizz! Buffs shortened.") +
+              "</div>",
             Game.mouseX,
             Game.mouseY
           );
@@ -218,8 +218,8 @@ M.launch = function () {
           if (buildings.length == 0) {
             Game.Popup(
               '<div style="font-size:80%;">' +
-              loc("No buildings to improve!") +
-              "</div>",
+                loc("No buildings to improve!") +
+                "</div>",
               Game.mouseX,
               Game.mouseY
             );
@@ -229,8 +229,8 @@ M.launch = function () {
           building.buyFree(1);
           Game.Popup(
             '<div style="font-size:80%;">' +
-            loc("A new %1<br>bursts out of the ground.", building.single) +
-            "</div>",
+              loc("A new %1<br>bursts out of the ground.", building.single) +
+              "</div>",
             Game.mouseX,
             Game.mouseY
           );
@@ -239,8 +239,8 @@ M.launch = function () {
           if (Game.BuildingsOwned == 0) {
             Game.Popup(
               '<div style="font-size:80%;">' +
-              loc("Backfired, but no buildings to destroy!") +
-              "</div>",
+                loc("Backfired, but no buildings to destroy!") +
+                "</div>",
               Game.mouseX,
               Game.mouseY
             );
@@ -254,13 +254,13 @@ M.launch = function () {
           building.sacrifice(1);
           Game.Popup(
             '<div style="font-size:80%;">' +
-            loc("Backfire!") +
-            "<br>" +
-            loc(
-              "One of your %1<br>disappears in a puff of smoke.",
-              building.plural
-            ) +
-            "</div>",
+              loc("Backfire!") +
+              "<br>" +
+              loc(
+                "One of your %1<br>disappears in a puff of smoke.",
+                building.plural
+              ) +
+              "</div>",
             Game.mouseX,
             Game.mouseY
           );
@@ -280,8 +280,8 @@ M.launch = function () {
           var buff = Game.gainBuff("haggler luck", 60, 2);
           Game.Popup(
             '<div style="font-size:80%;">' +
-            loc("Upgrades are cheaper!") +
-            "</div>",
+              loc("Upgrades are cheaper!") +
+              "</div>",
             Game.mouseX,
             Game.mouseY
           );
@@ -291,10 +291,10 @@ M.launch = function () {
           var buff = Game.gainBuff("haggler misery", 60 * 60, 2);
           Game.Popup(
             '<div style="font-size:80%;">' +
-            loc("Backfire!") +
-            "<br>" +
-            loc("Upgrades are pricier!") +
-            "</div>",
+              loc("Backfire!") +
+              "<br>" +
+              loc("Upgrades are pricier!") +
+              "</div>",
             Game.mouseX,
             Game.mouseY
           );
@@ -312,10 +312,10 @@ M.launch = function () {
           var buff = Game.gainBuff("pixie luck", 60, 2);
           Game.Popup(
             '<div style="font-size:80%;">' +
-            loc("Crafty pixies") +
-            "<br>" +
-            loc("Buildings are cheaper!") +
-            "</div>",
+              loc("Crafty pixies") +
+              "<br>" +
+              loc("Buildings are cheaper!") +
+              "</div>",
             Game.mouseX,
             Game.mouseY
           );
@@ -325,12 +325,12 @@ M.launch = function () {
           var buff = Game.gainBuff("pixie misery", 60 * 60, 2);
           Game.Popup(
             '<div style="font-size:80%;">' +
-            loc("Backfire!") +
-            "<br>" +
-            loc("Nasty goblins") +
-            "<br>" +
-            loc("Buildings are pricier!") +
-            "</div>",
+              loc("Backfire!") +
+              "<br>" +
+              loc("Nasty goblins") +
+              "<br>" +
+              loc("Buildings are pricier!") +
+              "</div>",
             Game.mouseX,
             Game.mouseY
           );
@@ -357,8 +357,8 @@ M.launch = function () {
           if (spells.length == 0) {
             Game.Popup(
               '<div style="font-size:80%;">' +
-              loc("No eligible spells!") +
-              "</div>",
+                loc("No eligible spells!") +
+                "</div>",
               Game.mouseX,
               Game.mouseY
             );
@@ -380,8 +380,8 @@ M.launch = function () {
                   setTimeout(function () {
                     Game.Popup(
                       '<div style="font-size:80%;">' +
-                      loc("That's too bad!<br>Magic refunded.") +
-                      "</div>",
+                        loc("That's too bad!<br>Magic refunded.") +
+                        "</div>",
                       Game.mouseX,
                       Game.mouseY
                     );
@@ -393,11 +393,11 @@ M.launch = function () {
           );
           Game.Popup(
             '<div style="font-size:80%;">' +
-            loc("Casting %1<br>for %2 magic...", [
-              spell.name,
-              Beautify(cost),
-            ]) +
-            "</div>",
+              loc("Casting %1<br>for %2 magic...", [
+                spell.name,
+                Beautify(cost),
+              ]) +
+              "</div>",
             Game.mouseX,
             Game.mouseY
           );
@@ -415,8 +415,8 @@ M.launch = function () {
           if (!out) {
             Game.Popup(
               '<div style="font-size:80%;">' +
-              loc("Unable to spawn a wrinkler!") +
-              "</div>",
+                loc("Unable to spawn a wrinkler!") +
+                "</div>",
               Game.mouseX,
               Game.mouseY
             );
@@ -424,8 +424,8 @@ M.launch = function () {
           }
           Game.Popup(
             '<div style="font-size:80%;">' +
-            loc("Rise, my precious!") +
-            "</div>",
+              loc("Rise, my precious!") +
+              "</div>",
             Game.mouseX,
             Game.mouseY
           );
@@ -435,10 +435,10 @@ M.launch = function () {
           if (!out) {
             Game.Popup(
               '<div style="font-size:80%;">' +
-              loc("Backfire!") +
-              "<br>" +
-              loc("But no wrinkler was harmed.") +
-              "</div>",
+                loc("Backfire!") +
+                "<br>" +
+                loc("But no wrinkler was harmed.") +
+                "</div>",
               Game.mouseX,
               Game.mouseY
             );
@@ -446,10 +446,10 @@ M.launch = function () {
           }
           Game.Popup(
             '<div style="font-size:80%;">' +
-            loc("Backfire!") +
-            "<br>" +
-            loc("So long, ugly...") +
-            "</div>",
+              loc("Backfire!") +
+              "<br>" +
+              loc("So long, ugly...") +
+              "</div>",
             Game.mouseX,
             Game.mouseY
           );
@@ -473,8 +473,8 @@ M.launch = function () {
           var buff = Game.gainBuff("magic adept", 5 * 60, 10);
           Game.Popup(
             '<div style="font-size:80%;">' +
-            loc("Ineptitude diminished!") +
-            "</div>",
+              loc("Ineptitude diminished!") +
+              "</div>",
             Game.mouseX,
             Game.mouseY
           );
@@ -484,10 +484,10 @@ M.launch = function () {
           var buff = Game.gainBuff("magic inept", 10 * 60, 5);
           Game.Popup(
             '<div style="font-size:80%;">' +
-            loc("Backfire!") +
-            "<br>" +
-            loc("Ineptitude magnified!") +
-            "</div>",
+              loc("Backfire!") +
+              "<br>" +
+              loc("Ineptitude magnified!") +
+              "</div>",
             Game.mouseX,
             Game.mouseY
           );
@@ -507,8 +507,8 @@ M.launch = function () {
       var lvl = Math.max(M.parent.level, 1);
       M.magicM = Math.floor(
         4 +
-        Math.pow(towers, 0.6) +
-        Math.log((towers + (lvl - 1) * 10) / 15 + 1) * 15
+          Math.pow(towers, 0.6) +
+          Math.log((towers + (lvl - 1) * 10) / 15 + 1) * 15
       );
       //old formula :
       /*
@@ -642,10 +642,10 @@ M.launch = function () {
           "</div>" +
           (me.fail
             ? "<div><small>" +
-            loc("Chance to backfire:") +
-            ' <b style="color:#f66">' +
-            Math.ceil(100 * backfire) +
-            "%</b></small></div>"
+              loc("Chance to backfire:") +
+              ' <b style="color:#f66">' +
+              Math.ceil(100 * backfire) +
+              "%</b></small></div>"
             : "") +
           '<div class="line"></div><div class="description"><b>' +
           loc("Effect:") +
@@ -654,10 +654,10 @@ M.launch = function () {
           "</span>" +
           (me.failDesc
             ? '<div style="height:8px;"></div><b>' +
-            loc("Backfire:") +
-            '</b> <span class="red">' +
-            me.failDesc +
-            "</span>"
+              loc("Backfire:") +
+              '</b> <span class="red">' +
+              me.failDesc +
+              "</span>"
             : "") +
           "</div></div>";
         return str;
@@ -712,10 +712,10 @@ M.launch = function () {
         '" ' +
         Game.getDynamicTooltip(
           "Game.ObjectsById[" +
-          M.parent.id +
-          "].minigame.spellTooltip(" +
-          me.id +
-          ")",
+            M.parent.id +
+            "].minigame.spellTooltip(" +
+            me.id +
+            ")",
           "this"
         ) +
         '><div class="usesIcon shadowFilter grimoireIcon" style="background-position:' +
@@ -741,10 +741,10 @@ M.launch = function () {
       'px;"></div><div id="grimoireBarFull" class="meter filling" style="width:1px;"></div><div id="grimoireBarText" class="titleFont"></div><div ' +
       Game.getTooltip(
         '<div style="padding:8px;width:300px;font-size:11px;text-align:center;">' +
-        loc(
-          'This is your magic meter. Each spell costs magic to use.<div class="line"></div>Your maximum amount of magic varies depending on your amount of <b>Wizard towers</b>, and their level.<div class="line"></div>Magic refills over time. The lower your magic meter, the slower it refills.'
-        ) +
-        "</div>"
+          loc(
+            'This is your magic meter. Each spell costs magic to use.<div class="line"></div>Your maximum amount of magic varies depending on your amount of <b>Wizard towers</b>, and their level.<div class="line"></div>Magic refills over time. The lower your magic meter, the slower it refills.'
+          ) +
+          "</div>"
       ) +
       ' style="position:absolute;left:0px;top:0px;right:0px;bottom:0px;"></div></div>';
     str += '<div id="grimoireInfo"></div>';
@@ -775,22 +775,22 @@ M.launch = function () {
         loc("Click to refill <b>%1 units</b> of your magic meter for %2.", [
           100,
           '<span class="price lump">' +
-          loc("%1 sugar lump", LBeautify(1)) +
-          "</span>",
+            loc("%1 sugar lump", LBeautify(1)) +
+            "</span>",
         ]) +
         (Game.canRefillLump()
           ? "<br><small>(" +
-          loc(
-            "can be done once every %1",
-            Game.sayTime(Game.getLumpRefillMax(), -1)
-          ) +
-          ")</small>"
+            loc(
+              "can be done once every %1",
+              Game.sayTime(Game.getLumpRefillMax(), -1)
+            ) +
+            ")</small>"
           : '<br><small class="red">(' +
-          loc(
-            "usable again in %1",
-            Game.sayTime(Game.getLumpRefillRemaining() + Game.fps, -1)
-          ) +
-          ")</small>") +
+            loc(
+              "usable again in %1",
+              Game.sayTime(Game.getLumpRefillRemaining() + Game.fps, -1)
+            ) +
+            ")</small>") +
         "</div>"
       );
     };

@@ -1,5 +1,5 @@
-/*
-All this code is copyright Orteil, 2013-2022.
+﻿/*
+All this code is copyright Orteil, 2013-2023.
 	-with some help, advice and fixes by Nicholas Laux, Debugbro, Opti, the folks at Playsaurus, and lots of people on reddit, Discord, and the DashNet forums
 	-also includes a bunch of snippets found on stackoverflow.com and others
 	-want to mod the game? scroll down to the "MODDING API" section
@@ -168,6 +168,12 @@ localStorageSet = function (key, str) {
 };
 
 var ajax = function (url, callback) {
+  if (
+    !location.hostname ||
+    location.hostname === "localhost" ||
+    location.hostname === "127.0.0.1"
+  )
+    return false;
   var httpRequest = new XMLHttpRequest();
   if (!httpRequest) {
     return false;
@@ -1351,14 +1357,17 @@ var Loader = function () //asset-loading system
     for (var i in assets) {
       this.loadingN++;
       this.assetsN++;
-      if (!this.assetsLoading[assets[i]] && !this.assetsLoaded[assets[i]]) {
+      if (
+        this.assetsLoading.indexOf(assets[i]) == -1 &&
+        this.assetsLoaded.indexOf(assets[i]) == -1
+      ) {
         var img = new Image();
-        if (assets[i].indexOf("/") != -1) img.src = assets[i];
-        else img.src = this.domain + assets[i];
         img.alt = assets[i];
         img.onload = bind(this, this.onLoad);
         this.assets[assets[i]] = img;
         this.assetsLoading.push(assets[i]);
+        if (assets[i].indexOf("/") != -1) img.src = assets[i];
+        else img.src = this.domain + assets[i];
       }
     }
   };
@@ -1382,6 +1391,22 @@ var Loader = function () //asset-loading system
       this.doneLoading = 1;
       this.loaded();
     }
+  };
+  this.waitForLoad = function (assets, callback) {
+    //execute callback if all assets are ready to use, else check again every 200ms
+    var me = this;
+    var checkLoadedLoop = function () {
+      for (var i = 0; i < assets.length; i++) {
+        if (me.assetsLoaded.indexOf(assets[i]) == -1) {
+          setTimeout(checkLoadedLoop, 200);
+          return false;
+        }
+      }
+      callback();
+      return true;
+    };
+    me.Load(assets);
+    checkLoadedLoop();
   };
   this.getProgress = function () {
     return 1 - this.loadingN / this.assetsN;
@@ -2064,6 +2089,17 @@ Game.Launch = function () {
 
   Game.updateLog +=
     '</div><div class="subsection update">' +
+    '<div class="title">08/03/2023 - often imitated, never duplicated</div>' +
+    '<div class="listing">&bull; added the final, 20th building</div>' +
+    '<div class="listing" style="font-size:80%;margin-left:20px;">-currently, no more buildings are planned beyond this one; there are still many more updates to come, but future patches will focus on adding minigames to the existing buildings along with other features!</div>' +
+    '<div class="listing">&bull; added another tier of upgrades and achievements</div>' +
+    '<div class="listing">&bull; updated flavored milk icons</div>' +
+    '<div class="listing">&bull; added visual cue for shimmering veil</div>' +
+    '<div class="listing">&bull; Cookie Clicker turns 10 years old this year. Thank you for clicking cookies with us!</div>' +
+    '</div><div class="subsection update small">' +
+    '<div class="title">08/08/2022 - the baker with all the gifts</div>' +
+    '<div class="listing">&bull; Cookie Clicker turns 9, celebrate and send other players presents with the new heavenly upgrade!</div>' +
+    '</div><div class="subsection update">' +
     '<div class="title">31/05/2022 - a mind of its own</div>' +
     '<div class="listing">&bull; added a new building</div>' +
     '<div class="listing">&bull; added a new tier of upgrades and achievements</div>' +
@@ -2582,12 +2618,12 @@ Game.Launch = function () {
 
   Game.ready = 0;
 
-  Game.Load = function () {
+  Game.Load = function (callback) {
     //l('offGameMessage').innerHTML='<div style="padding:64px 128px;"><div class="title">Loading...</div></div>';
     Game.Loader = new Loader();
     Game.Loader.domain = "img/";
     if (typeof PRELOAD !== "undefined") Game.Loader.loaded = PRELOAD(Game.Init);
-    else Game.Loader.loaded = Game.Init;
+    else Game.Loader.loaded = callback;
     Game.Loader.Load(["filler.png"]);
   };
   Game.ErrorFrame = function () {
@@ -2840,6 +2876,9 @@ Game.Launch = function () {
     Game.startDate = parseInt(Date.now()); //when we started playing
     Game.fullDate = parseInt(Date.now()); //when we started playing (carries over with resets)
     Game.lastDate = parseInt(Date.now()); //when we last saved the game (used to compute "cookies made since we closed the game" etc)
+
+    Game.cookiesSent = 0;
+    Game.cookiesReceived = 0;
 
     Game.prefs = [];
     Game.DefaultPrefs = function () {
@@ -3721,6 +3760,9 @@ Game.Launch = function () {
         ";" +
         (type == 3 ? "\n	seed : " : "") +
         Game.seed +
+        ";" +
+        (type == 3 ? "\n	appearance : " : "") +
+        Game.YouCustomizer.save() +
         "|";
       if (type == 3) str += "\n\nPacked preferences bitfield\n	";
       var str2 = //prefs
@@ -3916,6 +3958,12 @@ Game.Launch = function () {
         ";" +
         (type == 3 ? "\n	music volume : " : "") +
         parseInt(Math.floor(Game.volumeMusic)) +
+        ";" +
+        (type == 3 ? "\n	cookies sent : " : "") +
+        parseInt(Math.floor(Game.cookiesSent)) +
+        ";" +
+        (type == 3 ? "\n	cookies received : " : "") +
+        parseInt(Math.floor(Game.cookiesReceived)) +
         ";" +
         "|"; //cookies and lots of other stuff
 
@@ -4151,6 +4199,7 @@ Game.Launch = function () {
             Game.lastDate = parseInt(spl[2]);
             var bakeryName = spl[3] ? spl[3] : Game.GetBakeryName();
             Game.seed = spl[4] ? spl[4] : Game.makeSeed();
+            Game.YouCustomizer.load(spl[5] || 0);
             //prefs
             if (version < 1.0503) spl = str[3].split("");
             else if (version < 2.0046) spl = unpack2(str[3]).split("");
@@ -4258,6 +4307,8 @@ Game.Launch = function () {
             Game.fortuneCPS = spl[50] ? parseInt(spl[50]) : 0;
             Game.cookiesPsRawHighest = spl[51] ? parseFloat(spl[51]) : 0;
             Game.volumeMusic = spl[52] ? parseInt(spl[52]) : 50;
+            Game.cookiesSent = spl[53] ? parseInt(spl[53]) : 0;
+            Game.cookiesReceived = spl[54] ? parseInt(spl[54]) : 0;
 
             spl = str[5].split(";"); //buildings
             Game.BuildingsOwned = 0;
@@ -4796,9 +4847,21 @@ Game.Launch = function () {
           1000000000000000000000000000000000000000000000000000000
         )
           Game.Win("If at first you don't succeed");
+        if (
+          cookiesForfeited >=
+          1000000000000000000000000000000000000000000000000000000000
+        )
+          Game.Win("No more room in hell");
 
         if (Math.round(Game.cookies) == 1000000000000)
           Game.Win("When the cookies ascend just right");
+
+        if (
+          Game.hasBuff("Loan 1") ||
+          Game.hasBuff("Loan 2") ||
+          Game.hasBuff("Loan 3")
+        )
+          Game.Win("Debt evasion");
       }
 
       Game.killBuffs();
@@ -4835,6 +4898,11 @@ Game.Launch = function () {
 
       Game.startDate = parseInt(Date.now());
       Game.lastDate = parseInt(Date.now());
+
+      if (hard) {
+        Game.cookiesSent = 0;
+        Game.cookiesReceived = 0;
+      }
 
       Game.cookiesSucked = 0;
       Game.wrinklersPopped = 0;
@@ -4961,6 +5029,8 @@ Game.Launch = function () {
       Game.runModHook("reset", hard);
 
       if (hard) {
+        Game.YouCustomizer.resetGenes();
+
         Game.clicksThisSession = 0;
         if (Game.T > Game.fps * 5 && Game.ReincarnateTimer == 0) {
           //fade out of black and pop the cookie
@@ -5198,6 +5268,9 @@ Game.Launch = function () {
         (Game.prefs.screenreader
           ? '<button aria-labelledby="ariaReader-' + me.type + "-" + me.id + '"'
           : "<div") +
+        ' data-id="' +
+        me.id +
+        '"' +
         (clickStr != "" ? " " + Game.clickStr + '="' + clickStr + '"' : "") +
         ' class="' +
         classes +
@@ -5474,7 +5547,7 @@ Game.Launch = function () {
           ? '<div style="font-size:9px;">Id: ' +
             me.id +
             " | Order: " +
-            Math.floor(me.order) +
+            me.order +
             (me.tier ? " | Tier: " + me.tier : "") +
             "</div>"
           : "")
@@ -5680,7 +5753,7 @@ Game.Launch = function () {
       loc("Reincarnate") +
       "</span></a>" +
       '<div id="ascendModeButton" style="position:absolute;right:34px;bottom:25px;display:none;"></div>' +
-      '<input type="text" style="display:block;" id="upgradePositions"/></div>' +
+      "</div>" +
       '<div id="ascendInfo"><div class="ascendData smallFramed" style="margin-top:22px;width:75%;font-size:11px;">' +
       loc(
         "You are ascending.<br>Drag the screen around<br>or use arrow keys!<br>When you're ready,<br>click Reincarnate."
@@ -5873,7 +5946,6 @@ Game.Launch = function () {
     Game.AscendOffYT = 0;
     Game.AscendZoomT = 1;
     Game.AscendDragging = 0;
-    Game.AscendGridSnap = 24;
     Game.heavenlyBounds = { left: 0, right: 0, top: 0, bottom: 0 };
     Game.UpdateAscend = function () {
       if (Game.keys[37]) Game.AscendOffXT += 16 * (1 / Game.AscendZoomT);
@@ -5894,6 +5966,10 @@ Game.Launch = function () {
       Game.AscendZoom += (Game.AscendZoomT - Game.AscendZoom) * 0.25;
       if (Math.abs(Game.AscendZoomT - Game.AscendZoom) < 0.005)
         Game.AscendZoom = Game.AscendZoomT;
+      if (Math.abs(Game.AscendOffXT - Game.AscendOffX) < 0.005)
+        Game.AscendOffX = Game.AscendOffXT;
+      if (Math.abs(Game.AscendOffYT - Game.AscendOffY) < 0.005)
+        Game.AscendOffY = Game.AscendOffYT;
 
       if (Game.mouseDown && !Game.promptOn) {
         if (!Game.AscendDragging) {
@@ -5902,51 +5978,6 @@ Game.Launch = function () {
         }
         Game.AscendDragging = 1;
 
-        if (Game.DebuggingPrestige) {
-          if (Game.SelectedHeavenlyUpgrade) {
-            Game.tooltip.hide();
-            //drag upgrades around
-            var me = Game.SelectedHeavenlyUpgrade;
-            me.posX +=
-              (Game.mouseX - Game.AscendDragX) * (1 / Game.AscendZoomT);
-            me.posY +=
-              (Game.mouseY - Game.AscendDragY) * (1 / Game.AscendZoomT);
-            var posX = me.posX; //Math.round(me.posX/Game.AscendGridSnap)*Game.AscendGridSnap;
-            var posY = me.posY; //Math.round(me.posY/Game.AscendGridSnap)*Game.AscendGridSnap;
-            l("heavenlyUpgrade" + me.id).style.left = Math.floor(posX) + "px";
-            l("heavenlyUpgrade" + me.id).style.top = Math.floor(posY) + "px";
-            for (var ii in me.parents) {
-              var origX = 0;
-              var origY = 0;
-              var targX = me.posX + 28;
-              var targY = me.posY + 28;
-              if (me.parents[ii] != -1) {
-                origX = me.parents[ii].posX + 28;
-                origY = me.parents[ii].posY + 28;
-              }
-              var rot =
-                -(Math.atan((targY - origY) / (origX - targX)) / Math.PI) * 180;
-              if (targX <= origX) rot += 180;
-              var dist = Math.floor(
-                Math.sqrt(
-                  (targX - origX) * (targX - origX) +
-                    (targY - origY) * (targY - origY)
-                )
-              );
-
-              l("heavenlyLink" + me.id + "-" + ii).style =
-                "width:" +
-                dist +
-                "px;transform:rotate(" +
-                rot +
-                "deg);left:" +
-                origX +
-                "px;top:" +
-                origY +
-                "px;";
-            }
-          }
-        }
         if (!Game.SelectedHeavenlyUpgrade) {
           Game.AscendOffXT +=
             (Game.mouseX - Game.AscendDragX) * (1 / Game.AscendZoomT);
@@ -5956,14 +5987,6 @@ Game.Launch = function () {
         Game.AscendDragX = Game.mouseX;
         Game.AscendDragY = Game.mouseY;
       } else {
-        /*if (Game.SelectedHeavenlyUpgrade)
-				{
-					var me=Game.SelectedHeavenlyUpgrade;
-					me.posX=Math.round(me.posX/Game.AscendGridSnap)*Game.AscendGridSnap;
-					me.posY=Math.round(me.posY/Game.AscendGridSnap)*Game.AscendGridSnap;
-					l('heavenlyUpgrade'+me.id).style.left=me.posX+'px';
-					l('heavenlyUpgrade'+me.id).style.top=me.posY+'px';
-				}*/
         Game.AscendDragging = 0;
         Game.SelectedHeavenlyUpgrade = 0;
       }
@@ -6039,23 +6062,6 @@ Game.Launch = function () {
       }
       Game.heavenlyChipsDisplayed +=
         (Game.heavenlyChips - Game.heavenlyChipsDisplayed) * 0.4;
-
-      if (Game.DebuggingPrestige && Game.T % 10 == 0) {
-        var str = "";
-        for (var i in Game.PrestigeUpgrades) {
-          var me = Game.PrestigeUpgrades[i];
-          if (me.placedByCode) continue;
-          str +=
-            me.id +
-            ":[" +
-            Math.floor(me.posX) +
-            "," +
-            Math.floor(me.posY) +
-            "],";
-        }
-        l("upgradePositions").value = "Game.UpgradePositions={" + str + "};";
-      }
-      //if (Game.T%5==0) Game.BuildAscendTree();
     };
     Game.AscendRefocus = function () {
       Game.AscendOffX = 0;
@@ -6080,9 +6086,6 @@ Game.Launch = function () {
     Game.BuildAscendTree = function (justBought) {
       var str = "";
       Game.heavenlyBounds = { left: 0, right: 0, top: 0, bottom: 0 };
-
-      if (Game.DebuggingPrestige) l("upgradePositions").style.display = "block";
-      else l("upgradePositions").style.display = "none";
 
       var toPop = [];
       for (var i in Game.PrestigeUpgrades) {
@@ -6227,75 +6230,9 @@ Game.Launch = function () {
       Game.heavenlyBounds.top -= 128;
       Game.heavenlyBounds.right += 128 + 64;
       Game.heavenlyBounds.bottom += 128 + 64;
-      //str+='<div style="border:1px solid red;position:absolute;left:'+Game.heavenlyBounds.left+'px;width:'+(Game.heavenlyBounds.right-Game.heavenlyBounds.left)+'px;top:'+Game.heavenlyBounds.top+'px;height:'+(Game.heavenlyBounds.bottom-Game.heavenlyBounds.top)+'px;"></div>';
       str += "</div>";
       Game.ascendUpgradesl.innerHTML = str;
 
-      if (Game.DebuggingPrestige) {
-        for (var i in Game.PrestigeUpgrades) {
-          var me = Game.PrestigeUpgrades[i];
-          AddEvent(
-            l("heavenlyUpgrade" + me.id),
-            "mousedown",
-            (function (me) {
-              return function () {
-                if (!Game.DebuggingPrestige) return;
-                if (
-                  Game.keys[16] &&
-                  typeof LASTHEAVENLYSELECTED !== "undefined" &&
-                  me != LASTHEAVENLYSELECTED
-                ) {
-                  //when clicking an upgrade with ctrl, set it as reference point; clicking any sibling upgrade with shift will align it in a nice arc around their shared parent
-                  var parent = 0;
-                  for (var i = 0; i < me.parents.length; i++) {
-                    if (
-                      LASTHEAVENLYSELECTED.parents.indexOf(me.parents[i]) != -1
-                    )
-                      parent = me.parents[i];
-                  }
-                  if (parent) {
-                    var origX = parent.posX;
-                    var origY = parent.posY;
-                    var targX = LASTHEAVENLYSELECTED.posX;
-                    var targY = LASTHEAVENLYSELECTED.posY;
-                    var rot =
-                      Math.atan2(targY - origY, origX - targX) - Math.PI / 2;
-                    var dist = Math.floor(
-                      Math.sqrt(
-                        (targX - origX) * (targX - origX) +
-                          (targY - origY) * (targY - origY)
-                      )
-                    );
-                    me.posX =
-                      parent.posX + Math.sin(rot - (Math.PI * 2) / 8) * dist;
-                    me.posY =
-                      parent.posY + Math.cos(rot - (Math.PI * 2) / 8) * dist;
-                  }
-                  LASTHEAVENLYSELECTED = me;
-                  console.log("Set reference point to", me.name, ".");
-                }
-                if (Game.keys[17]) {
-                  LASTHEAVENLYSELECTED = me;
-                  console.log("Set reference point to", me.name, ".");
-                }
-                Game.SelectedHeavenlyUpgrade = me;
-              };
-            })(me)
-          );
-          AddEvent(
-            l("heavenlyUpgrade" + me.id),
-            "mouseup",
-            (function (me) {
-              return function () {
-                if (Game.SelectedHeavenlyUpgrade == me) {
-                  Game.SelectedHeavenlyUpgrade = 0;
-                  Game.BuildAscendTree();
-                }
-              };
-            })(me)
-          );
-        }
-      }
       setTimeout(function () {
         Game.tooltip.shouldHide = true;
       }, 100);
@@ -6991,7 +6928,7 @@ Game.Launch = function () {
     AddEvent(window, "keyup", function (e) {
       Game.lastActivity = Game.time;
       if (e.keyCode == 27) {
-        if (Game.promptOn) {
+        if (Game.promptOn && !Game.promptNoClose) {
           Game.ClosePrompt();
           PlaySound("snd/tickOff.mp3");
         }
@@ -7183,6 +7120,8 @@ Game.Launch = function () {
         catMult *= 1 + Game.milkProgress * 0.115 * milkMult;
       if (Game.Has("Kitten admins"))
         catMult *= 1 + Game.milkProgress * 0.11 * milkMult;
+      if (Game.Has("Kitten strategists"))
+        catMult *= 1 + Game.milkProgress * 0.105 * milkMult;
       if (Game.Has("Kitten angels"))
         catMult *= 1 + Game.milkProgress * 0.1 * milkMult;
       if (Game.Has("Fortune #103"))
@@ -7276,8 +7215,9 @@ Game.Launch = function () {
       }
       var suckRate = 1 / 20; //each wrinkler eats a twentieth of your CpS
       suckRate *= Game.eff("wrinklerEat");
+      suckRate *= 1 + Game.auraMult("Dragon Guts") * 0.2;
 
-      Game.cpsSucked = sucking * suckRate;
+      Game.cpsSucked = Math.min(1, sucking * suckRate);
 
       if (Game.Has("Elder Covenant")) mult *= 0.95;
 
@@ -7641,6 +7581,8 @@ Game.Launch = function () {
 
             if (me.life / Game.fps > me.dur - 1) Game.Win("Early bird");
             if (me.life < Game.fps) Game.Win("Fading luck");
+
+            if (me.wrath) Game.Win("Wrath cookie");
           }
 
           if (Game.forceUnslotGod) {
@@ -7907,6 +7849,30 @@ Game.Launch = function () {
                   "Thank you. A team has been dispatched.",
                   "They know.",
                   "Oops. This was just a chocolate cookie with shiny aluminium foil.",
+                  "Eschaton immanentized!",
+                  "Oh, that tickled!",
+                  "Again.",
+                  "You've made a grave mistake.",
+                  "Chocolate chips reshuffled!",
+                  "Randomized chance card outcome!",
+                  "Mouse acceleration +0.03%!",
+                  "Ascension bonuses x5,000 for 0.1 seconds!",
+                  "Gained 1 extra!",
+                  "Sorry, better luck next time!",
+                  "I felt that.",
+                  "Nice try, but no.",
+                  "Wait, sorry, I wasn't ready yet.",
+                  "Yippee!",
+                  "Bones removed.",
+                  "Organs added.",
+                  "Did you just click that?",
+                  "Huh? Oh, there was nothing there.",
+                  "You saw nothing.",
+                  "It seems you hallucinated that golden cookie.",
+                  "This golden cookie was a complete fabrication.",
+                  "In theory there's no wrong way to click a golden cookie, but you just did that, somehow.",
+                  "All cookies multiplied by 999!<br>All cookies divided by 999!",
+                  "Why?",
                 ])
               : choose(loc("Cookie blab"));
             popup = str;
@@ -8227,6 +8193,7 @@ Game.Launch = function () {
       "Javascript console": ["Refactoring", "Antipattern"],
       Idleverse: ["Cosmic nursery", "Big crunch"],
       "Cortex baker": ["Brainstorm", "Brain freeze"],
+      You: ["Deduplication", "Clone strike"],
     };
 
     /*=====================================================================================
@@ -8644,9 +8611,12 @@ Game.Launch = function () {
 		=======================================================================================*/
     Game.darkenL = l("darken");
     AddEvent(Game.darkenL, "click", function () {
-      Game.Click = 0;
-      PlaySound("snd/tickOff.mp3");
-      Game.ClosePrompt();
+      if (Game.promptNoClose) {
+      } else {
+        Game.Click = 0;
+        PlaySound("snd/tickOff.mp3");
+        Game.ClosePrompt();
+      }
     });
     Game.promptL = l("promptContent");
     Game.promptAnchorL = l("promptAnchor");
@@ -8656,6 +8626,7 @@ Game.Launch = function () {
     Game.promptUpdateFunc = 0;
     Game.promptOptionsN = 0;
     Game.promptOptionFocus = 0;
+    Game.promptNoClose = false;
     Game.UpdatePrompt = function () {
       if (Game.promptUpdateFunc) Game.promptUpdateFunc();
       Game.promptAnchorL.style.top =
@@ -8663,6 +8634,7 @@ Game.Launch = function () {
         "px";
     };
     Game.Prompt = function (content, options, updateFunc, style) {
+      Game.promptNoClose = false;
       if (updateFunc) Game.promptUpdateFunc = updateFunc;
       if (style) Game.promptWrapL.className = "framed " + style;
       else Game.promptWrapL.className = "framed";
@@ -8672,6 +8644,10 @@ Game.Launch = function () {
         var id = str.substring(4, str.indexOf(">"));
         str = str.substring(str.indexOf(">") + 1);
         str = '<div id="promptContent' + id + '">' + str + "</div>";
+      }
+      if (str.indexOf("<noClose>") != -1) {
+        str = str.replace("<noClose>", "");
+        Game.promptNoClose = true;
       }
       var opts = "";
       Game.promptOptionsN = 0;
@@ -8719,6 +8695,8 @@ Game.Launch = function () {
       Game.promptOptionFocus = 0;
       Game.FocusPromptOption(0);
       Game.UpdatePrompt();
+      if (!Game.promptNoClose) l("promptClose").style.display = "block";
+      else l("promptClose").style.display = "none";
     };
     Game.ClosePrompt = function () {
       if (!Game.promptOn) return false;
@@ -8728,14 +8706,17 @@ Game.Launch = function () {
       Game.promptUpdateFunc = 0;
       Game.promptOptionFocus = 0;
       Game.promptOptionsN = 0;
+      Game.promptNoClose = false;
     };
     Game.ConfirmPrompt = function () {
+      var el = l("promptOption" + Game.promptOptionFocus);
       if (
         Game.promptOn &&
-        l("promptOption" + Game.promptOptionFocus) &&
-        l("promptOption" + Game.promptOptionFocus).style.display != "none"
+        el &&
+        el.style.display != "none" &&
+        (" " + el.className + " ").indexOf(" disabled ") == -1
       )
-        FireEvent(l("promptOption" + Game.promptOptionFocus), "click");
+        FireEvent(el, "click");
     };
     Game.FocusPromptOption = function (dir, tryN) {
       var id = Game.promptOptionFocus + dir;
@@ -9031,13 +9012,13 @@ Game.Launch = function () {
       if (Music) Music.setFilter(what / 100);
     };
 
-    Game.showLangSelection = function () {
+    Game.showLangSelection = function (firstLaunch) {
       var str = "";
       for (var i in Langs) {
         var lang = Langs[i];
         str +=
           '<div class="langSelectButton title' +
-          (locId == lang.file ? " selected" : "") +
+          (!firstLaunch && locId == lang.file ? " selected" : "") +
           '" style="padding:4px;" id="langSelect-' +
           i +
           '">' +
@@ -9045,15 +9026,19 @@ Game.Launch = function () {
           "</div>";
       }
       Game.Prompt(
-        "<id ChangeLanguage><h3>" +
+        "<id ChangeLanguage>" +
+          (firstLaunch ? "<noClose>" : "") +
+          '<h3 id="languageSelectHeader">' +
           loc("Change language") +
           "</h3>" +
           '<div class="line"></div>' +
-          '<div style="font-size:11px;opacity:0.5;margin-bottom:12px;">(' +
-          loc("note: this will save and reload your game") +
-          ")</div>" +
+          (firstLaunch
+            ? ""
+            : '<div style="font-size:11px;opacity:0.5;margin-bottom:12px;">(' +
+              loc("note: this will save and reload your game") +
+              ")</div>") +
           str,
-        [loc("Cancel")]
+        firstLaunch ? 0 : [loc("Cancel")]
       );
 
       for (var i in Langs) {
@@ -9063,7 +9048,8 @@ Game.Launch = function () {
           "click",
           (function (lang) {
             return function () {
-              if (lang != locId) {
+              if (true) {
+                //lang!=locId)
                 PlaySound("snd/tick.mp3");
                 localStorageSet("CookieClickerLang", lang);
                 Game.toSave = true;
@@ -9077,7 +9063,8 @@ Game.Launch = function () {
           "mouseover",
           (function (lang) {
             return function () {
-              if (lang != locId) PlaySound("snd/smallTick.mp3", 0.75);
+              PlaySound("snd/smallTick.mp3", 0.75);
+              l("languageSelectHeader").innerHTML = Langs[lang].changeLanguage;
             };
           })(i)
         );
@@ -9103,10 +9090,71 @@ Game.Launch = function () {
           '<div class="subsection" style="padding:0px;">' +
           '<div class="title">' +
           loc("General") +
+          (Game.Has("Wrapping paper") && Game.ascensionMode == 0
+            ? '<div id="giftStuff" class="optionBox" style="float:right;text-align:right;clear:both;overflow:hidden;margin-top:-32px;' +
+              (Game.cookies >= 1000000000 && !Game.hasBuff("Gifted out")
+                ? ""
+                : "opacity:0.5;") +
+              '">' +
+              '<div class="icon" style="display:inline-block;float:right;margin:-4px;width:48px;height:48px;position:relative;background-position:' +
+              -34 * 48 +
+              "px " +
+              -6 * 48 +
+              'px;"></div><br>' +
+              '<a class="option" ' +
+              Game.clickStr +
+              "=\"if (Game.cookies<1000000000 || Game.hasBuff('Gifted out')){return false;}PlaySound('snd/tick.mp3');Game.promptGiftSend();\" style=\"position:relative;margin:0px;margin-bottom:2px;float:right;\" " +
+              Game.getTooltip(
+                '<div style="min-width:200px;text-align:center;font-size:11px;" id="tooltipGiftRedeem"><b>' +
+                  loc("Send a gift") +
+                  "</b>" +
+                  (Game.hasBuff("Gifted out")
+                    ? "<br>" +
+                      loc("You've already sent or redeemed a gift recently.")
+                    : "") +
+                  (Game.cookies < 1000000000
+                    ? "<br>" +
+                      loc(
+                        "You need at least %1 cookies in bank to send and receive gifts.",
+                        loc("%1 cookie", LBeautify(1000000000))
+                      )
+                    : "") +
+                  "</div>",
+                "this"
+              ) +
+              ">" +
+              loc("Send") +
+              "</a><br>" +
+              '<a class="option" ' +
+              Game.clickStr +
+              "=\"if (Game.cookies<1000000000 || Game.hasBuff('Gifted out')){return false;}PlaySound('snd/tick.mp3');Game.promptGiftRedeem();\" style=\"position:relative;margin:0px;float:right;\" " +
+              Game.getTooltip(
+                '<div style="min-width:200px;text-align:center;font-size:11px;" id="tooltipGiftRedeem"><b>' +
+                  loc("Redeem a gift") +
+                  "</b>" +
+                  (Game.hasBuff("Gifted out")
+                    ? "<br>" +
+                      loc("You've already sent or redeemed a gift recently.")
+                    : "") +
+                  (Game.cookies < 1000000000
+                    ? "<br>" +
+                      loc(
+                        "You need at least %1 cookies in bank to send and receive gifts.",
+                        loc("%1 cookie", LBeautify(1000000000))
+                      )
+                    : "") +
+                  "</div>",
+                "this"
+              ) +
+              ">" +
+              loc("Redeem") +
+              "</a>" +
+              "</div>"
+            : "") +
           "</div>" +
-          '<div class="listing" style="text-align:center;"><div style="display:inline-block;padding:2px 8px;opacity:0.75;font-size:12px;vertical-align:middle;" class="smallFancyButton">' +
+          '<div class="listing" style="text-align:center;"><div style="display:inline-block;padding:2px 8px;opacity:0.75;font-size:12px;vertical-align:middle;pointer-events:none;" class="smallFancyButton">' +
           loc("Language: %1", "<b>" + Langs[locId].name + "</b>") +
-          '</div><div class="icon" style="vertical-align:middle;display:inline-block;background-position:' +
+          '</div><div class="icon" style="pointer-events:none;vertical-align:middle;display:inline-block;background-position:' +
           -30 * 48 +
           "px " +
           -29 * 48 +
@@ -9679,12 +9727,27 @@ Game.Launch = function () {
 
         var seasonStr = Game.sayTime(Game.seasonT, -1);
 
+        var giftStr = "";
+        if (Game.cookiesSent > 0)
+          giftStr +=
+            "<b>" +
+            loc("Cookies gifted:") +
+            "</b> " +
+            Beautify(Game.cookiesSent);
+        if (Game.cookiesReceived > 0)
+          giftStr +=
+            (Game.cookiesSent > 0 ? "<b> / </b>" : "") +
+            "<b>" +
+            loc("Cookies received:") +
+            "</b> " +
+            Beautify(Game.cookiesReceived);
+
         str +=
           '<div class="section">' +
           (EN ? "Statistics" : loc("Stats")) +
           "</div>" +
           '<div class="subsection">' +
-          '<div class="title">' +
+          '<div class="title" style="position:relative;">' +
           loc("General") +
           "</div>" +
           '<div id="statsGeneral">' +
@@ -9793,6 +9856,7 @@ Game.Launch = function () {
               Beautify(dropMult, 2) +
               "</div>"
             : "") +
+          (giftStr != "" ? '<div class="listing">' + giftStr + "</div>" : "") +
           "</div>" +
           '<br><div class="listing"><b>' +
           loc("Running version:") +
@@ -10094,7 +10158,11 @@ Game.Launch = function () {
 
       var NEWS = loc("News :").replace(" ", "&nbsp;") + " ";
 
-      if (Game.TickerN % 2 == 0 || Game.cookiesEarned >= 10100000000) {
+      var loreProgress = Math.round(
+        (Math.log(Game.cookiesEarned / 10) * Math.LOG10E + 1) | 0
+      );
+
+      if (Game.TickerN % 2 == 0 || loreProgress > 14) {
         var animals = [
           "newts",
           "penguins",
@@ -10566,6 +10634,27 @@ Game.Launch = function () {
                 ])
               );
 
+            if (Game.Objects["You"].amount > 0)
+              list.push(
+                choose([
+                  "News : the person of the year is, this year again, " +
+                    Game.bakeryName +
+                    "! How unexpected!",
+                  "News : criminals caught sharing pirated copies of " +
+                    Game.bakeryName +
+                    "'s genome may be exposed to fines and up to 17 billion years prison, reminds constable.",
+                  "News : could local restaurants be serving you bootleg " +
+                    Game.bakeryName +
+                    " clone meat? Our delicious investigation follows after tonight's news.",
+                  "News : beloved cookie magnate " +
+                    Game.bakeryName +
+                    ", erroneously reported as trampled to death by crazed fans, thankfully found to be escaped clone mistaken for original.",
+                  'News : "Really, we\'re just looking for some basic societal acceptance and compassion", mumbles incoherent genetic freak ' +
+                    Game.bakeryName +
+                    "-Clone #59014.",
+                ])
+              );
+
             if (Game.season == "halloween" && Game.cookiesEarned >= 1000)
               list.push(
                 choose([
@@ -10706,6 +10795,10 @@ Game.Launch = function () {
             if (Game.Has("Kitten admins"))
               list.push(
                 "News : all systems nominal, claim kitten admins obviously in way over their heads."
+              );
+            if (Game.Has("Kitten strategists"))
+              list.push(
+                "News : overpaid kittens scratching their fuzzy little heads trying to find new ways to get cookies in your shopping cart!"
               );
             if (Game.Has("Kitten angels"))
               list.push(
@@ -11064,9 +11157,9 @@ Game.Launch = function () {
                   ", dangerous fad or juicy new market?",
                 "News : person typing these wouldn't mind someone else breaking the news to THEM, for a change.",
                 'News : "average person bakes ' +
-                  Beautify(Math.ceil(Game.cookiesEarned / 7300000000)) +
+                  Beautify(Math.ceil(Game.cookiesEarned / 8000000000)) +
                   " cookie" +
-                  (Math.ceil(Game.cookiesEarned / 7300000000) == 1 ? "" : "s") +
+                  (Math.ceil(Game.cookiesEarned / 8000000000) == 1 ? "" : "s") +
                   ' a year" factoid actually just statistical error; ' +
                   Game.bakeryName +
                   ", who has produced " +
@@ -11078,108 +11171,96 @@ Game.Launch = function () {
       }
 
       if (list.length == 0) {
-        if (Game.cookiesEarned < 5)
+        if (loreProgress <= 0)
           list.push(
             loc(
               "You feel like making cookies. But nobody wants to eat your cookies."
             )
           );
-        else if (Game.cookiesEarned < 50)
+        else if (loreProgress <= 1)
           list.push(
             loc(
               "Your first batch goes to the trash. The neighborhood raccoon barely touches it."
             )
           );
-        else if (Game.cookiesEarned < 100)
+        else if (loreProgress <= 2)
           list.push(loc("Your family accepts to try some of your cookies."));
-        else if (Game.cookiesEarned < 500)
-          list.push(loc("Your cookies are popular in the neighborhood."));
-        else if (Game.cookiesEarned < 1000)
-          list.push(loc("People are starting to talk about your cookies."));
-        else if (Game.cookiesEarned < 5000)
-          list.push(loc("Your cookies are talked about for miles around."));
-        else if (Game.cookiesEarned < 10000)
-          list.push(loc("Your cookies are renowned in the whole town!"));
-        else if (Game.cookiesEarned < 50000)
-          list.push(loc("Your cookies bring all the boys to the yard."));
-        else if (Game.cookiesEarned < 100000)
-          list.push(loc("Your cookies now have their own website!"));
-        else if (Game.cookiesEarned < 500000)
-          list.push(loc("Your cookies are worth a lot of money."));
-        else if (Game.cookiesEarned < 1000000)
-          list.push(loc("Your cookies sell very well in distant countries."));
-        else if (Game.cookiesEarned < 5000000)
+        else if (loreProgress <= 3)
+          list.push(
+            loc("Your cookies are popular in the neighborhood."),
+            loc("People are starting to talk about your cookies.")
+          );
+        else if (loreProgress <= 4)
+          list.push(
+            loc("Your cookies are talked about for miles around."),
+            loc("Your cookies are renowned in the whole town!")
+          );
+        else if (loreProgress <= 5)
+          list.push(
+            loc("Your cookies bring all the boys to the yard."),
+            loc("Your cookies now have their own website!")
+          );
+        else if (loreProgress <= 6)
+          list.push(
+            loc("Your cookies are worth a lot of money."),
+            loc("Your cookies sell very well in distant countries.")
+          );
+        else if (loreProgress <= 7)
           list.push(
             loc(
               "People come from very far away to get a taste of your cookies."
-            )
-          );
-        else if (Game.cookiesEarned < 10000000)
-          list.push(
+            ),
             loc(
               "Kings and queens from all over the world are enjoying your cookies."
             )
           );
-        else if (Game.cookiesEarned < 50000000)
-          list.push(loc("There are now museums dedicated to your cookies."));
-        else if (Game.cookiesEarned < 100000000)
+        else if (loreProgress <= 8)
           list.push(
+            loc("There are now museums dedicated to your cookies."),
             loc("A national day has been created in honor of your cookies.")
           );
-        else if (Game.cookiesEarned < 500000000)
+        else if (loreProgress <= 9)
           list.push(
-            loc("Your cookies have been named a part of the world wonders.")
-          );
-        else if (Game.cookiesEarned < 1000000000)
-          list.push(
+            loc("Your cookies have been named a part of the world wonders."),
             loc("History books now include a whole chapter about your cookies.")
           );
-        else if (Game.cookiesEarned < 5000000000)
+        else if (loreProgress <= 10)
           list.push(
-            loc("Your cookies have been placed under government surveillance.")
+            loc("Your cookies have been placed under government surveillance."),
+            loc("The whole planet is enjoying your cookies!")
           );
-        else if (Game.cookiesEarned < 10000000000)
-          list.push(loc("The whole planet is enjoying your cookies!"));
-        else if (Game.cookiesEarned < 50000000000)
+        else if (loreProgress <= 11)
           list.push(
             loc(
               "Strange creatures from neighboring planets wish to try your cookies."
-            )
-          );
-        else if (Game.cookiesEarned < 100000000000)
-          list.push(
+            ),
             loc(
               "Elder gods from the whole cosmos have awoken to taste your cookies."
             )
           );
-        else if (Game.cookiesEarned < 500000000000)
+        else if (loreProgress <= 12)
           list.push(
             loc(
               "Beings from other dimensions lapse into existence just to get a taste of your cookies."
-            )
+            ),
+            loc("Your cookies have achieved sentience.")
           );
-        else if (Game.cookiesEarned < 1000000000000)
-          list.push(loc("Your cookies have achieved sentience."));
-        else if (Game.cookiesEarned < 5000000000000)
+        else if (loreProgress <= 13)
           list.push(
             loc(
               "The universe has now turned into cookie dough, to the molecular level."
-            )
-          );
-        else if (Game.cookiesEarned < 10000000000000)
-          list.push(
+            ),
             loc(
               "Your cookies are rewriting the fundamental laws of the universe."
             )
           );
-        else if (Game.cookiesEarned < 10000000000000)
+        else if (loreProgress <= 14)
           list.push(
             loc(
-              'A local news station runs a 10-minute segment about your cookies. Success!<br><span style="font-size:50%;">(you win a cookie)</span>'
-            )
+              "A local news station runs a 10-minute segment about your cookies. Success!<br><small>(you win a cookie)</small>"
+            ),
+            loc("it's time to stop playing")
           );
-        else if (Game.cookiesEarned < 10100000000000)
-          list.push(loc("it's time to stop playing")); //only show this for 100 millions (it's funny for a moment)
       }
 
       //if (Game.elderWrath>0 && (Game.pledges==0 || Math.random()<0.2))
@@ -11233,9 +11314,33 @@ Game.Launch = function () {
         if (Game.cookiesEarned >= 1000)
           list.push(
             choose([
-              "Your office chair is really comfortable.",
-              "Business meetings are such a joy!",
-              "You've spent the whole day " +
+              choose([
+                "Your office chair is really comfortable.",
+                "Profit's in the air!",
+                "Business meetings are such a joy!",
+                "What a great view from your office!",
+                "Smell that? That's capitalism, baby!",
+                "You truly love answering emails.",
+                "Working hard, or hardly working?",
+                "Another day in paradise!",
+                "Expensive lunch time!",
+                "Another government bailout coming up! Splendid!",
+                "These profits are doing wonderful things for your skin.",
+                "You daydream for a moment about a world without taxes.",
+                "You'll worry about environmental damage when you're dead!",
+                "Yay, office supplies!",
+                "Sweet, those new staplers just came in!",
+                "Ohh, coffee break!",
+              ]),
+              choose([
+                "You've spent the whole day",
+                "Another great day",
+                "First order of business today:",
+                "Why, you truly enjoy",
+                "What next? That's right,",
+                "You check what's next on the agenda. Oh boy,",
+              ]) +
+                " " +
                 choose([
                   "signing contracts",
                   "filling out forms",
@@ -11247,16 +11352,48 @@ Game.Launch = function () {
                   "videoconferencing",
                   "hiring dynamic young executives",
                   "meeting new investors",
+                  "updating your rolodex",
+                  "pumping up those numbers",
+                  "punching in some numbers",
+                  "getting investigated for workers' rights violations",
+                  "reorganizing documents",
+                  "belittling underlings",
+                  "reviewing employee performance",
+                  "revising company policies",
+                  "downsizing",
+                  "pulling yourself up by your bootstraps",
+                  "adjusting your tie",
+                  "performing totally normal human activities",
+                  "recentering yourself in the scream room",
+                  "immanentizing the eschaton",
+                  "shredding some sensitive documents",
+                  "comparing business cards",
+                  "pondering the meaning of your existence",
+                  "listening to the roaring emptiness inside your soul",
                   "playing minigolf in your office",
                 ]) +
                 "!",
-              "The word of the day is : " +
+              "The word of the day is: " +
                 choose([
                   "viral",
                   "search engine optimization",
                   "blags and wobsites",
                   "social networks",
-                  "web 3.0",
+                  "webinette",
+                  "staycation",
+                  "user experience",
+                  "crowdfunding",
+                  "carbon neutral",
+                  "big data",
+                  "machine learning",
+                  "disrupting",
+                  "influencers",
+                  "monoconsensual transactions",
+                  "sustainable",
+                  "freemium",
+                  "incentives",
+                  "grassroots",
+                  "web 3.0" /*this was before this whole crypto mess i'm so sorry*/,
                   "logistics",
                   "leveraging",
                   "branding",
@@ -11269,26 +11406,42 @@ Game.Launch = function () {
                   "blogulacious",
                   "blogastic",
                   "authenticity",
+                  "plastics",
                   "electronic mail",
                   "cellular phones",
                   "rap music",
+                  "bulbs",
+                  "goblinization",
+                  "straight-to-bakery",
+                  "microbakeries",
+                  "chocolativity",
+                  "flavorfulness",
+                  "tastyfication",
+                  "sugar offsets",
+                  "activated wheat",
+                  "reification",
+                  "immanentize the eschaton",
                   "cookies, I guess",
                 ]) +
                 ".",
-              "Profit's in the air!",
             ])
           );
-        if (Game.cookiesEarned >= 1000 && Math.random() < 0.1)
+        if (Game.cookiesEarned >= 1000 && Math.random() < 0.05)
           list.push(
             choose([
               "If you could get some more cookies baked, that'd be great.",
               "So. About those TPS reports.",
-              "Another day in paradise!",
-              "Working hard, or hardly working?",
+              "Hmm, you've got some video tapes to return.",
+              "They'll pay. They'll all pay.",
+              "You haven't even begun to peak.",
+              "There is an idea of a " +
+                Game.bakeryName +
+                ". Some kind of abstraction. But there is no real you, only an entity. Something illusory.",
+              "This was a terrible idea!",
             ])
           );
 
-        if (Game.TickerN % 2 == 0 || Game.cookiesEarned >= 10100000000) {
+        if (Game.TickerN % 2 == 0) {
           if (Game.Objects["Grandma"].amount > 0)
             list.push(
               choose([
@@ -11425,42 +11578,57 @@ Game.Launch = function () {
                 "Bakery think tanks invent entire new form of human communication to advertise and boost cookie sales!",
               ])
             );
+
+          if (Game.Objects["You"].amount > 0)
+            list.push(
+              choose([
+                "" +
+                  Game.bakeryName +
+                  ' releases new self-help book: "How I Made My ' +
+                  Beautify(Game.cookiesEarned) +
+                  ' Cookies And How You Can Too"!',
+                "Don't miss our interview tonight with the stupefying " +
+                  Game.bakeryName +
+                  ", who discusses where to go next once you're at the top!",
+                "Fame, beauty, biscuits; " +
+                  Game.bakeryName +
+                  " has it all - but is it enough?",
+              ])
+            );
         }
 
-        if (Game.cookiesEarned < 5)
+        if (loreProgress <= 0)
           list.push("Such a grand day to begin a new business.");
-        else if (Game.cookiesEarned < 50)
-          list.push("You're baking up a storm!");
-        else if (Game.cookiesEarned < 100)
+        else if (loreProgress <= 1) list.push("You're baking up a storm!");
+        else if (loreProgress <= 2)
           list.push(
             "You are confident that one day, your cookie company will be the greatest on the market!"
           );
-        else if (Game.cookiesEarned < 1000)
-          list.push("Business is picking up!");
-        else if (Game.cookiesEarned < 5000)
+        else if (loreProgress <= 3) list.push("Business is picking up!");
+        else if (loreProgress <= 4)
           list.push("You're making sales left and right!");
-        else if (Game.cookiesEarned < 20000)
+        else if (loreProgress <= 5)
           list.push("Everyone wants to buy your cookies!");
-        else if (Game.cookiesEarned < 50000)
+        else if (loreProgress <= 6)
           list.push("You are now spending most of your day signing contracts!");
-        else if (Game.cookiesEarned < 500000)
+        else if (loreProgress <= 7)
           list.push('You\'ve been elected "business tycoon of the year"!');
-        else if (Game.cookiesEarned < 1000000)
+        else if (loreProgress <= 8)
           list.push(
             "Your cookies are a worldwide sensation! Well done, old chap!"
           );
-        else if (Game.cookiesEarned < 5000000)
+        else if (loreProgress <= 9)
           list.push(
             "Your brand has made its way into popular culture. Children recite your slogans and adults reminisce them fondly!"
           );
-        else if (Game.cookiesEarned < 1000000000)
+        else if (loreProgress <= 10)
           list.push(
             "A business day like any other. It's good to be at the top!"
           );
-        else if (Game.cookiesEarned < 10100000000)
+        else if (loreProgress <= 11)
           list.push(
-            "You look back at your career. It's been a fascinating journey, building your baking empire from the ground up."
-          ); //only show this for 100 millions
+            "You look back on your career. It's been a fascinating journey, building your baking empire from the ground up."
+          );
       }
 
       for (var i = 0; i < Game.modHooks["ticker"].length; i++) {
@@ -11721,7 +11889,7 @@ Game.Launch = function () {
         if (this.id >= 16) this.basePrice *= 10;
         if (this.id >= 17) this.basePrice *= 10;
         if (this.id >= 18) this.basePrice *= 10;
-        if (this.id >= 19) this.basePrice *= 10;
+        if (this.id >= 19) this.basePrice *= 20;
         this.price = this.basePrice;
         this.bulkPrice = this.price;
       }
@@ -12471,6 +12639,18 @@ Game.Launch = function () {
       if (this.id == 0)
         l("sectionLeftExtra").innerHTML = l("sectionLeftExtra").innerHTML + str;
       else {
+        if (this.id == 19) {
+          str +=
+            '<canvas style="display:none;" width=64 height=64 id="rowCanvasAdd' +
+            this.id +
+            '"></canvas>';
+          str +=
+            '<a class="smallFancyButton framed onlyOnCanvas" style="position:absolute;z-index:10;left:8px;bottom:22px;" ' +
+            Game.clickStr +
+            '="Game.YouCustomizer.prompt()">' +
+            loc("Customize") +
+            "</a>";
+        }
         str +=
           '<canvas class="rowCanvas" id="rowCanvas' + this.id + '"></canvas>';
         str += '<div class="rowSpecial" id="rowSpecial' + this.id + '"></div>';
@@ -12508,6 +12688,7 @@ Game.Launch = function () {
           //frames : if present, slice the pic in [frames] horizontal slices and pick one at random
 
           var pic = this.art.pic;
+          if (this.id == 19) pic = "canvasAdd";
           var bg = this.art.bg;
           var xV = this.art.xV || 0;
           var yV = this.art.yV || 0;
@@ -12603,7 +12784,6 @@ Game.Launch = function () {
           if (this.mouseOn) {
             var selected = -1;
             if (this.name == "Grandma") {
-              //mouse detection only fits grandma sprites for now
               var marginW = -18;
               var marginH = -10;
               for (var i = 0; i < len; i++) {
@@ -12646,6 +12826,19 @@ Game.Launch = function () {
                   );
                 }
               }
+            } else if (this.name == "You") {
+              var marginW = -16;
+              var marginH = 64;
+              for (var i = 0; i < len; i++) {
+                var pic = this.pics[i];
+                if (
+                  this.mousePos[0] >= pic.x - marginW &&
+                  this.mousePos[0] < pic.x + 64 + marginW &&
+                  this.mousePos[1] >= pic.y - marginH &&
+                  this.mousePos[1] < pic.y + 64 + marginH
+                )
+                  selected = i;
+              }
             }
           }
 
@@ -12653,7 +12846,8 @@ Game.Launch = function () {
 
           for (var i = 0; i < len; i++) {
             var pic = this.pics[i];
-            var sprite = Pic(pic.pic);
+            var sprite = pic.pic == "canvasAdd" ? this.canvasAdd : Pic(pic.pic);
+            //we need to generalize this system at some point
             if (selected == i && this.name == "Grandma") {
               ctx.font = "14px Merriweather";
               ctx.textAlign = "center";
@@ -12722,6 +12916,113 @@ Game.Launch = function () {
                 sprite.height
               );
             else ctx.drawImage(sprite, pic.x, pic.y);
+
+            if (selected == i && this.name == "You") {
+              ctx.drawImage(Pic("youLight.png"), pic.x + 11, 0);
+
+              Math.seedrandom(Game.seed + " cloneTitle");
+              var cloneTitle = Math.floor(Math.random() * 3);
+              Math.seedrandom(Game.seed + " clone " + pic.id);
+              ctx.font = "9px Merriweather";
+              ctx.textAlign = "center";
+              var text =
+                loc("Clone") +
+                " #" +
+                Math.floor(Math.random() * 500 + pic.id * 500 + 1);
+              if (EN) {
+                text = [
+                  text,
+                  Game.bakeryName +
+                    " " +
+                    romanize(pic.id + 2) +
+                    (Math.random() < 0.05
+                      ? choose([
+                          ", Jr.",
+                          ", Esq.",
+                          ", Etc.",
+                          ", Cont'd",
+                          ", and so forth",
+                        ])
+                      : ""),
+                  choose([
+                    choose([
+                      "Lil' $",
+                      "Mini-$",
+                      "$ " + (pic.id + 2),
+                      "Attempt " + (pic.id + 1),
+                      "Experiment " + (pic.id + 1),
+                      "Not $",
+                      "$, again",
+                      "$, the sequel",
+                      "$ " + (pic.id + 2) + " Electric Boogaloo",
+                      "Also $",
+                      "$ (remixed)",
+                      "The Other $",
+                      "$, The Next Generation",
+                      "$, part " + romanize(pic.id + 2),
+                      "Revenge of $",
+                      "The Return of $",
+                      "$ reborn",
+                      "$ in the flesh",
+                    ]),
+                    '$ "' +
+                      choose([
+                        "The Menace",
+                        "The Artisan",
+                        "The Relative",
+                        "The Twin",
+                        "The Specialist",
+                        "The Officer",
+                        "The Snitch",
+                        "The Simpleton",
+                        "The Genius",
+                        "The Conformist",
+                        "The Mistake",
+                        "The Accident",
+                        "Lab-grown",
+                        "Vat Kid",
+                        "Photocopy",
+                        "Cloney",
+                        "Ditto",
+                        "Accounted For",
+                        "Twitchy",
+                        "Wacky",
+                        "Zen",
+                        "Rinse & Repeat",
+                        "Spitting Image",
+                        "Passing Resemblance",
+                        "Nickname",
+                        "Make It So",
+                        "Deja-vu",
+                        "Cookie",
+                        "Clicky",
+                        "Orteil",
+                        "But Better",
+                        "Guess Who",
+                        "Transplant Fodder",
+                        "Furthermore",
+                        "One More Thing",
+                        "Liquid",
+                        "Second Chance",
+                        "Offspring",
+                        "Mulligan",
+                        "Spare Parts",
+                      ]) +
+                      '" McClone',
+                  ]).replace("$", Game.bakeryName),
+                ][cloneTitle];
+              }
+              var width = ctx.measureText(text).width + 12;
+              var x = Math.max(
+                0,
+                Math.min(pic.x + 32 - width / 2, this.canvas.width - width)
+              );
+              var y = 10;
+              ctx.fillStyle = "#000";
+              ctx.fillText(text, Math.floor(x + width / 2), Math.floor(y) + 1);
+              ctx.fillStyle = "#fff";
+              ctx.fillText(text, Math.floor(x + width / 2), Math.floor(y));
+            }
           }
 
           /*
@@ -13152,6 +13453,7 @@ Game.Launch = function () {
           if (Game.Has("Script grannies")) list.push("scriptGrandma");
           if (Game.Has("Alternate grandmas")) list.push("alternateGrandma");
           if (Game.Has("Brainy grandmas")) list.push("brainyGrandma");
+          if (Game.Has("Clone grandmas")) list.push("cloneGrandma");
           if (Game.season == "christmas") list.push("elfGrandma");
           if (Game.season == "easter") list.push("bunnyGrandma");
           return choose(list) + ".png";
@@ -13694,6 +13996,471 @@ Game.Launch = function () {
       }
     );
 
+    new Game.Object(
+      "You",
+      "You|You|cloned|[X] optimized gene|[X] optimized genes",
+      "You, alone, are the reason behind all these cookies. You figure if there were more of you... maybe you could make even more.",
+      20,
+      35,
+      {
+        pic: "you.png",
+        bg: "youBackground.png",
+        xV: 0,
+        yV: 0,
+        w: 64,
+        rows: 2,
+        x: 0,
+        y: 0,
+      },
+      12345678987654321,
+      function (me) {
+        var mult = 1;
+        mult *= Game.GetTieredCpsMult(me);
+        mult *= Game.magicCpS(me.name);
+        return me.baseCps * mult;
+      },
+      function () {
+        Game.UnlockTiered(this);
+        if (
+          this.amount >= Game.SpecialGrandmaUnlock &&
+          Game.Objects["Grandma"].amount > 0
+        )
+          Game.Unlock(this.grandma.name);
+      }
+    );
+    Game.YouCustomizer = {};
+    Game.YouCustomizer.render = function () {
+      var me = Game.Objects["You"];
+      var ctx = me.ctxAdd;
+      var img = "you.png";
+      var imgAddons = "youAddons.png";
+
+      Game.Loader.waitForLoad([img, imgAddons], function () {
+        //accessing pixel data not allowed locally; set img and imgAddons to base64-encoded image strings for testing
+        if (
+          !location.hostname ||
+          location.hostname === "localhost" ||
+          location.hostname === "127.0.0.1"
+        ) {
+        } else {
+          ctx.drawImage(Pic(img), 0, 0);
+          var canvasAddon = document.createElement("canvas");
+          canvasAddon.width = 32;
+          canvasAddon.height = 32;
+          ctxAddon = canvasAddon.getContext("2d");
+          var canvasCols = document.createElement("canvas");
+          canvasCols.width = 8;
+          canvasCols.height = 32;
+          ctxCols = canvasCols.getContext("2d");
+          ctxCols.drawImage(Pic(imgAddons), 0, 0, 8, 32, 0, 0, 8, 32);
+          var imgDataCols = ctxCols.getImageData(0, 0, 8, 32);
+          var dataCols = imgDataCols.data;
+          var cols = [];
+          for (var i = 0; i < 32; i++) {
+            cols[i] = [
+              [
+                dataCols[4 + i * 32],
+                dataCols[4 + i * 32 + 1],
+                dataCols[4 + i * 32 + 2],
+              ],
+              [
+                dataCols[4 + i * 32 + 4],
+                dataCols[4 + i * 32 + 1 + 4],
+                dataCols[4 + i * 32 + 2 + 4],
+              ],
+              [
+                dataCols[4 + i * 32 + 8],
+                dataCols[4 + i * 32 + 1 + 8],
+                dataCols[4 + i * 32 + 2 + 8],
+              ],
+            ];
+          }
+
+          var imgData = ctx.getImageData(0, 0, 64, 64);
+          var data = imgData.data;
+
+          var colSkinFull = [
+            [32, 14, 10],
+            [180, 80, 54],
+            [208, 144, 101],
+            [225, 192, 150],
+          ];
+          var colSkin = [];
+          for (var colI = 0; colI < colSkinFull.length; colI++) {
+            colSkin[colI] =
+              colSkinFull[colI][0] * 1000000 +
+              colSkinFull[colI][1] * 1000 +
+              colSkinFull[colI][2];
+          }
+          var colHairFull = [
+            [32, 14, 10],
+            [82, 55, 53],
+            [100, 83, 80],
+            [116, 97, 89],
+          ];
+          var colHair = [];
+          for (var colI = 0; colI < colHairFull.length; colI++) {
+            colHair[colI] =
+              colHairFull[colI][0] * 1000000 +
+              colHairFull[colI][1] * 1000 +
+              colHairFull[colI][2];
+          }
+          var shade1 = 0 * 1000000 + 118 * 1000 + 206;
+          var shade2 = 0 * 1000000 + 71 * 1000 + 125;
+
+          //apply addon canvases to main canvas, handling shading on skin and hair where necessary
+          var addonGenes = ["face", "head", "hair", "acc1", "acc2"];
+          for (var geneI = 0; geneI < addonGenes.length; geneI++) {
+            var addonTile = Game.YouCustomizer.getGeneValue(addonGenes[geneI]);
+            ctxAddon.clearRect(0, 0, 32, 32);
+            ctxAddon.drawImage(
+              Pic(imgAddons),
+              8 + addonTile[0] * 32,
+              addonTile[1] * 32,
+              32,
+              32,
+              0,
+              0,
+              32,
+              32
+            );
+
+            var imgDataAddon = ctxAddon.getImageData(0, 0, 32, 32);
+            var dataAddon = imgDataAddon.data;
+            var x = 0;
+            var y = 0;
+            for (i = 0; i < dataAddon.length; i += 4) {
+              var r = dataAddon[i];
+              var g = dataAddon[i + 1];
+              var b = dataAddon[i + 2];
+              var a = dataAddon[i + 3];
+
+              var off = (x + 16 + y * 64) * 4;
+              if (a != 0) {
+                var ro = data[off];
+                var go = data[off + 1];
+                var bo = data[off + 2];
+                var col = r * 1000000 + g * 1000 + b;
+                var shade = col == shade2 ? 2 : col == shade1 ? 1 : 0;
+                var indShadeAddon = colSkin.indexOf(r * 1000000 + g * 1000 + b);
+                var indShadeOr = colSkin.indexOf(ro * 1000000 + go * 1000 + bo);
+                var typeOr = 0;
+                if (indShadeOr > 0) typeOr = 1; //is skin
+                else if (indShadeOr == -1) {
+                  indShadeOr = colHair.indexOf(ro * 1000000 + go * 1000 + bo);
+                  if (indShadeOr > 0) typeOr = 2; //is hair
+                }
+
+                if (shade > 0 && indShadeOr > 0) {
+                  //painting shadow on hair or skin
+                  //light blue: shade one stage; dark blue: shade 2 stages
+                  var colOut = (
+                    typeOr == 1 ? colSkinFull : typeOr == 2 ? colHairFull : 0
+                  )[Math.max(0, indShadeOr - shade)];
+                  data[off] = colOut[0];
+                  data[off + 1] = colOut[1];
+                  data[off + 2] = colOut[2];
+                  data[off + 3] = a;
+                } else if (shade == 0) {
+                  data[off] = r;
+                  data[off + 1] = g;
+                  data[off + 2] = b;
+                  data[off + 3] = a;
+                }
+              }
+              x++;
+              if (x >= 32) {
+                x = 0;
+                y++;
+              }
+            }
+          }
+
+          //recolor hair and skin on final image
+          var skinCol = Game.YouCustomizer.getGeneValue("skinCol");
+          var hairCol = Game.YouCustomizer.getGeneValue("hairCol");
+          for (i = 0; i < data.length; i += 4) {
+            var r = data[i];
+            var g = data[i + 1];
+            var b = data[i + 2];
+            var a = data[i + 3];
+            if (a != 0) {
+              var indSkin = colSkin.indexOf(r * 1000000 + g * 1000 + b);
+              if (indSkin > 0) {
+                var col = cols[skinCol][indSkin - 1];
+                data[i] = col[0];
+                data[i + 1] = col[1];
+                data[i + 2] = col[2];
+              } else {
+                var indHair = colHair.indexOf(r * 1000000 + g * 1000 + b);
+                if (indHair > 0) {
+                  var col = cols[hairCol][indHair - 1];
+                  data[i] = col[0];
+                  data[i + 1] = col[1];
+                  data[i + 2] = col[2];
+                }
+              }
+            }
+          }
+          ctx.putImageData(imgData, 0, 0);
+        }
+      });
+    };
+    Game.YouCustomizer.genes = [
+      {
+        id: "hair",
+        isList: true,
+        def: 0,
+        choices: [
+          [0, 0],
+          [1, 0],
+          [2, 0],
+          [3, 0],
+          [4, 0],
+          [2, 1],
+          [3, 1],
+          [4, 1],
+          [4, 2],
+          [5, 3],
+          [8, 2],
+          [7, 1],
+          [5, 5],
+          [4, 5],
+        ],
+      },
+      {
+        id: "hairCol",
+        isList: true,
+        def: 1,
+        choices: [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
+      },
+      {
+        id: "skinCol",
+        isList: true,
+        def: 0,
+        choices: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+      },
+      {
+        id: "head",
+        isList: true,
+        def: 0,
+        choices: [
+          [0, 0],
+          [1, 1],
+          [0, 1],
+          [4, 3],
+        ],
+      },
+      {
+        id: "face",
+        isList: true,
+        def: 0,
+        choices: [
+          [3, 5],
+          [0, 0],
+          [0, 2],
+          [1, 2],
+          [2, 2],
+          [3, 2],
+          [0, 3],
+          [1, 3],
+          [2, 3],
+          [3, 3],
+        ],
+      },
+      {
+        id: "acc1",
+        isList: true,
+        def: 0,
+        choices: [
+          [0, 0],
+          [5, 1],
+          [5, 0],
+          [5, 2],
+          [0, 4],
+          [1, 4],
+          [2, 4],
+          [6, 4],
+          [8, 5],
+          [3, 4],
+          [7, 5],
+          [6, 0],
+          [6, 1],
+          [4, 4],
+          [5, 4],
+          [2, 5],
+          [7, 4],
+          [0, 5],
+          [1, 5],
+          [6, 5],
+          [6, 2],
+          [6, 3],
+          [7, 0],
+          [7, 2],
+          [7, 3],
+          [8, 1],
+          [8, 3],
+          [8, 4],
+        ],
+      },
+      {
+        id: "acc2",
+        isList: true,
+        def: 0,
+        choices: [[]],
+      },
+    ];
+    Game.YouCustomizer.save = function () {
+      return Game.YouCustomizer.currentGenes.join(",");
+    };
+    Game.YouCustomizer.load = function (genes) {
+      Game.YouCustomizer.resetGenes();
+      if (genes) {
+        genes = genes.split(",");
+        for (var i = 0; i < Game.YouCustomizer.genes.length; i++) {
+          if (typeof genes[i] !== "undefined")
+            Game.YouCustomizer.currentGenes[i] = parseInt(genes[i]);
+        }
+      }
+    };
+    Game.YouCustomizer.genesById = {};
+    for (var i = 0; i < Game.YouCustomizer.genes.length; i++) {
+      Game.YouCustomizer.genes[i].n = i;
+      Game.YouCustomizer.genesById[Game.YouCustomizer.genes[i].id] =
+        Game.YouCustomizer.genes[i];
+    }
+    Game.YouCustomizer.genesById["acc2"].choices =
+      Game.YouCustomizer.genesById["acc1"].choices;
+    Game.YouCustomizer.currentGenes = [];
+    Game.YouCustomizer.getGeneValue = function (id) {
+      var gene = Game.YouCustomizer.genesById[id];
+      if (gene.isList)
+        return gene.choices[Game.YouCustomizer.currentGenes[gene.n]];
+      else return Game.YouCustomizer.currentGenes[gene.n];
+    };
+    Game.YouCustomizer.resetGenes = function () {
+      for (var i = 0; i < Game.YouCustomizer.genes.length; i++) {
+        Game.YouCustomizer.currentGenes[i] = Game.YouCustomizer.genes[i].def;
+      }
+    };
+    Game.YouCustomizer.resetGenes();
+    Game.YouCustomizer.offsetGene = function (gene, off) {
+      gene = Game.YouCustomizer.genesById[gene];
+      Game.YouCustomizer.currentGenes[gene.n] += off;
+      if (gene.isList) {
+        if (Game.YouCustomizer.currentGenes[gene.n] >= gene.choices.length)
+          Game.YouCustomizer.currentGenes[gene.n] = 0;
+        else if (Game.YouCustomizer.currentGenes[gene.n] < 0)
+          Game.YouCustomizer.currentGenes[gene.n] = gene.choices.length - 1;
+        if (l("customizerSelect-N-" + gene.id))
+          l("customizerSelect-N-" + gene.id).innerHTML =
+            Game.YouCustomizer.currentGenes[gene.n] + 1;
+      } else {
+        if (Game.YouCustomizer.currentGenes[gene.n] > gene.choices[1])
+          Game.YouCustomizer.currentGenes[gene.n] = gene.choices[0];
+        else if (Game.YouCustomizer.currentGenes[gene.n] < gene.choices[0])
+          Game.YouCustomizer.currentGenes[gene.n] = gene.choices[1];
+        if (l("customizerSelect-N-" + gene.id))
+          l("customizerSelect-N-" + gene.id).innerHTML =
+            Game.YouCustomizer.currentGenes[gene.n] + 1 - gene.choices[0];
+      }
+      if (off != 0) {
+        PlaySound("snd/press.mp3");
+
+        Game.YouCustomizer.render();
+        Game.YouCustomizer.renderPortrait();
+
+        if (
+          Game.YouCustomizer.currentGenes[0] == 9 &&
+          (Game.YouCustomizer.currentGenes[1] == 1 ||
+            Game.YouCustomizer.currentGenes[1] == 6) &&
+          (Game.YouCustomizer.currentGenes[3] == 2 ||
+            Game.YouCustomizer.currentGenes[3] == 3) &&
+          (Game.YouCustomizer.currentGenes[5] == 2 ||
+            Game.YouCustomizer.currentGenes[5] == 3 ||
+            Game.YouCustomizer.currentGenes[6] == 2 ||
+            Game.YouCustomizer.currentGenes[6] == 3)
+        )
+          Game.Win("In her likeness");
+      }
+    };
+    Game.YouCustomizer.randomize = function () {
+      for (var i = 0; i < Game.YouCustomizer.genes.length; i++) {
+        Game.YouCustomizer.currentGenes[i] = Math.floor(
+          Math.random() * Game.YouCustomizer.genes[i].choices.length
+        );
+      }
+      Game.YouCustomizer.render();
+      Game.YouCustomizer.renderPortrait();
+    };
+    Game.YouCustomizer.renderPortrait = function () {
+      if (!l("youCustomizerPreview")) return false;
+      var ctx = l("youCustomizerPreview").getContext("2d");
+      ctx.clearRect(0, 0, 32, 32);
+      ctx.drawImage(Game.Objects["You"].canvasAdd, -16, 0);
+      ctx = l("youCustomizerPreviewBlur").getContext("2d");
+      ctx.globalCompositeOperation = "source-over";
+      ctx.clearRect(0, 0, 32, 32);
+      ctx.drawImage(Game.Objects["You"].canvasAdd, -16, 0);
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.beginPath();
+      ctx.arc(16, 16, 11, 0, 2 * Math.PI);
+      ctx.fill();
+    };
+    Game.YouCustomizer.prompt = function () {
+      var makeCustomizerSelector = function (gene, text) {
+        gene = Game.YouCustomizer.genesById[gene];
+        return (
+          '<div style="clear:both;width:100%;margin-bottom:6px;"><a ' +
+          Game.clickStr +
+          "=\"Game.YouCustomizer.offsetGene('" +
+          gene.id +
+          '\',-1)" id="customizerSelect-L-' +
+          gene.id +
+          '" class="framed smallFancyButton" style="float:left;margin-top:-4px;padding:2px 4px;">&lt;</a>' +
+          text +
+          ' <div id="customizerSelect-N-' +
+          gene.id +
+          '" style="display:inline;">' +
+          (gene.isList
+            ? Game.YouCustomizer.currentGenes[gene.n] + 1
+            : Game.YouCustomizer.currentGenes[gene.n] + 1 - gene.choices[0]) +
+          "</div><a " +
+          Game.clickStr +
+          "=\"Game.YouCustomizer.offsetGene('" +
+          gene.id +
+          '\',1)" id="customizerSelect-R-' +
+          gene.id +
+          '" class="framed smallFancyButton" style="float:right;margin-top:-4px;padding:2px 4px;">&gt;</a></div>'
+        );
+      };
+      PlaySound("snd/tick.mp3");
+      Game.Prompt(
+        "<id CustomizeYou><h3>" +
+          loc("Customize your clones") +
+          '</h3><div class="block" style="text-align:center;font-size:11px;">' +
+          loc("Sprung from your very DNA. Shape them in your image!") +
+          '</div><div class="block">' +
+          '<div style="position:relative;width:64px;height:64px;margin:0px auto 8px auto;"><canvas class="crisp" style="mask-image:radial-gradient(rgba(0,0,0,1) 0%,rgba(0,0,0,1) 40%,rgba(0, 0, 0,0) 75%);-webkit-mask-image:radial-gradient(rgba(0,0,0,1) 0%,rgba(0,0,0,1) 60%,rgba(0, 0, 0,0) 75%);border-radius:16px;transform:scale(2);position:absolute;left:16px;top:16px;" width=32 height=32 id="youCustomizerPreview"></canvas><canvas style="filter:blur(1px);opacity:0.5;border-radius:16px;transform:scale(2);position:absolute;left:16px;top:16px;z-index:10;" width=32 height=32 id="youCustomizerPreviewBlur"></canvas></div>' +
+          '<div style="text-align:center;clear:both;font-weight:bold;font-size:11px;" class="titleFont">' +
+          "<a class=\"option\" onclick=\"Game.YouCustomizer.randomize();PlaySound('snd/pop'+Math.floor(Math.random()*3+1)+'.mp3',0.75);\">" +
+          loc("Random") +
+          "</a><br>" +
+          makeCustomizerSelector("hair", loc("Hair")) +
+          makeCustomizerSelector("hairCol", loc("Hair color")) +
+          makeCustomizerSelector("skinCol", loc("Skin color")) +
+          makeCustomizerSelector("head", loc("Head shape")) +
+          makeCustomizerSelector("face", loc("Face")) +
+          makeCustomizerSelector("acc1", loc("Extra") + "-A") +
+          makeCustomizerSelector("acc2", loc("Extra") + "-B") +
+          "</div>" +
+          "",
+        [loc("Done")]
+      );
+      Game.YouCustomizer.render();
+      Game.YouCustomizer.renderPortrait();
+    };
+
     Game.foolObjects = {
       Unknown: {
         name: "Investment",
@@ -13795,6 +14562,11 @@ Game.Launch = function () {
         desc: "There's only so many ways you can bring in more profit. Or is there? Hire the most brilliant experts in the known universe and let them scrape their brains for you!",
         icon: 19,
       },
+      You: {
+        name: "You",
+        desc: "Your business is as great as it's gonna get. The only real way to improve it anymore is to improve yourself - and become the best Chief Executive Officer this world has ever seen.",
+        icon: 20,
+      },
     };
 
     if (true) {
@@ -13838,6 +14610,11 @@ Game.Launch = function () {
       if (me.id > 0) {
         me.canvas = l("rowCanvas" + me.id);
         me.ctx = me.canvas.getContext("2d", { alpha: false });
+        if (me.id == 19) {
+          me.canvasAdd = l("rowCanvasAdd" + me.id);
+          me.ctxAdd = me.canvasAdd.getContext("2d");
+          Game.YouCustomizer.render();
+        }
         me.pics = [];
         var icon = [0 * 64, me.icon * 64];
         muteStr +=
@@ -14514,6 +15291,14 @@ Game.Launch = function () {
         color: "#ff89e7",
         price: 5000000000000000000000000000000000000,
       },
+      15: {
+        name: "Glimmeringue",
+        unlock: 600,
+        achievUnlock: 700,
+        iconRow: 36,
+        color: "#fffaa8",
+        price: 50000000000000000000000000000000000000000,
+      },
       synergy1: {
         name: "Synergy I",
         unlock: 15,
@@ -14590,7 +15375,7 @@ Game.Launch = function () {
             (Game.ascensionMode != 1 &&
             Game.Has(this.buildingTie1.unshackleUpgrade) &&
             Game.Has(Game.Tiers[this.tier].unshackleUpgrade)
-              ? '<div style="text-align:center;">' +
+              ? '<div style="font-size:80%;text-align:center;">' +
                 loc(
                   "Unshackled! <b>+%1%</b> extra production.",
                   Math.round(
@@ -17085,16 +17870,19 @@ Game.Launch = function () {
       "A nice banker to cash in more cookies.",
       "Bank"
     );
+    Game.last.order = 250.0591;
     Game.GrandmaSynergy(
       "Priestess grandmas",
       "A nice priestess to praise the one true Baker in the sky.",
       "Temple"
     );
+    Game.last.order = 250.0592;
     Game.GrandmaSynergy(
       "Witch grandmas",
       "A nice witch to cast a zip, and a zoop, and poof! Cookies.",
       "Wizard tower"
     );
+    Game.last.order = 250.0593;
 
     order = 0;
     new Game.Upgrade(
@@ -20317,6 +21105,7 @@ Game.Launch = function () {
             [7, 10]
           );
           Game.Win("Thick-skinned");
+          Math.seedrandom();
           return false;
         }
         Math.seedrandom();
@@ -20961,7 +21750,7 @@ Game.Launch = function () {
     );
     Game.TieredUpgrade(
       "Fortune #010",
-      "<q>Don't get used to yourself. You're gonna have to change.</q>",
+      "<q>Change what you cannot accept. Furthermore: accept nothing.</q>",
       "Alchemy lab",
       "fortune"
     );
@@ -22094,8 +22883,8 @@ Game.Launch = function () {
           : Game.ObjectsById[building.id - 1].unshackleUpgrade,
       ];
       building.unshackleUpgrade = upgrade.name;
-      upgrade.posX = 750 - Math.sin((building.id + 1) * 0.25 + 2.3) * 500;
-      upgrade.posY = 200 + Math.cos((building.id + 1) * 0.25 + 2.3) * 500;
+      upgrade.posX = 750 - Math.sin((building.id + 1) * 0.23 + 2.3) * 500;
+      upgrade.posY = 200 + Math.cos((building.id + 1) * 0.23 + 2.3) * 500;
       return upgrade;
     };
 
@@ -22334,8 +23123,8 @@ Game.Launch = function () {
         "smallTick",
         "toneTick",
         "clickOn",
-        "clickOn2",
         "clickOff",
+        "clickOn2",
         "clickOff2",
         "pop1",
         "pop2",
@@ -22407,6 +23196,8 @@ Game.Launch = function () {
         "cashIn2",
         "cashOut",
         "upgrade",
+        "giftSend",
+        "giftGet",
         //'levelPrestige',
       ],
       tracks: [], //populated externally
@@ -22762,6 +23553,913 @@ Game.Launch = function () {
       price: Math.pow(10, 47),
     });
 
+    new Game.Upgrade(
+      "Wrapping paper",
+      loc(
+        "You may now send and receive gifts with other players through buttons in the top-right of the %1 menu.",
+        loc("Options")
+      ) +
+        "<q>Of course, you could've done this all along, but what kind of maniac sends presents without wrapping them first?</q>",
+      999999,
+      [16, 9]
+    );
+    Game.last.pool = "prestige";
+    Game.last.parents = ["Heralds"];
+
+    Game.giftBoxDesigns = [
+      [34, 6],
+      [16, 9],
+      [34, 3],
+      [34, 4],
+      [34, 5],
+      [34, 7],
+      [34, 8],
+      [34, 9],
+      [34, 10],
+      [34, 11],
+      [34, 12],
+    ];
+    Game.promptGiftRedeem = function () {
+      if (
+        !(
+          Game.Has("Wrapping paper") ||
+          Game.hasBuff("Gifted out") ||
+          Game.ascensionMode != 0
+        ) ||
+        Game.cookies < 1000000000
+      )
+        return false;
+      Game.Prompt(
+        "<id GiftRedeem><h3>" +
+          loc("Redeem a gift") +
+          "</h3>" +
+          '<div class="block" style="font-size:11px;">' +
+          tinyIcon([34, 6]) +
+          '<div class="line"></div>' +
+          '<input id="giftCode" type="text" style="width:100%;text-align:center;padding:4px 8px;box-sizing:border-box;margin:8px 3px;" value="" placeholder="' +
+          loc("paste code...") +
+          '"/>' +
+          '<div class="optionBox" style="margin:4px;"><a class="option smallFancyButton disabled" style="width:auto;text-align:center;" id="promptOption0">' +
+          loc("Redeem") +
+          "</a></div>" +
+          '<div id="giftError" class="warning" style="height:24px;"></div>' +
+          '<div style="opacity:0.7;">' +
+          loc(
+            "Once you redeem a gift, you will have to wait an hour before you can redeem another. Your game will save after redeeming."
+          ) +
+          "</div>" +
+          "</div>",
+        [[loc("Cancel"), 0, "float:right"]]
+      );
+
+      l("giftCode").focus();
+      l("giftCode").select();
+
+      var checkCode = function (str) {
+        var out = { cookies: 1, message: false, icon: Game.giftBoxDesigns[0] };
+        str = b64_to_utf8(str);
+        if (!str) return false;
+        str = str.split("|");
+        if (str[0] !== "MAIL") return false;
+
+        var val = parseInt(str[1] || 0);
+        if (Math.abs(Date.now() - val) > 1000 * 60 * 60 * 24 * 2) return -1;
+
+        val = parseInt(str[2] || 0);
+        if (val < 1) val = 1;
+        if (val > 1000) val = 1000;
+        val = val || 1;
+        out.cookies = val;
+
+        val = str[3] || 0;
+        if (val == "-") val = 0;
+        if (val) val = val.split(" ");
+        if (val.length != 2 || isNaN(val[0]) || isNaN(val[1])) val = 0;
+        if (val) val = [parseInt(val[0]), parseInt(val[1])];
+        if (val) out.icon = val;
+
+        val = (str[4] || "").split("\n").slice(0, 4);
+        for (var i = 0; i < val.length; i++) {
+          val[i] = val[i].substring(0, 25);
+        }
+        val = val.join("\n");
+        val = val.replace(/\/\$\//g, "|");
+        val = val.substring(0, 100);
+        if (val) out.message = val;
+
+        return out;
+      };
+
+      (function (checkCode) {
+        var inputCode = function () {
+          var val = l("giftCode").value;
+
+          var disabled = true;
+          if (val && val.length > 5) {
+            var out = checkCode(val);
+            if (out == -1) l("giftError").innerHTML = loc("Code expired.");
+            else if (!out) l("giftError").innerHTML = loc("Invalid code.");
+            else {
+              l("giftError").innerHTML = "";
+              if (
+                (" " + l("promptOption0").className + " ").indexOf(
+                  " disabled "
+                ) != -1
+              ) {
+                triggerAnim(l("promptOption0"), "pucker");
+                l("promptOption0").classList.remove("disabled");
+              }
+              disabled = false;
+            }
+          }
+          if (disabled) l("promptOption0").classList.add("disabled");
+        };
+        l("giftCode").addEventListener("change", inputCode);
+        l("giftCode").addEventListener("keyup", inputCode);
+        l("giftCode").addEventListener(
+          "keyup",
+          function (e) {
+            if (e.keyCode != 13) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          },
+          true
+        );
+
+        l("promptOption0").addEventListener("click", function () {
+          var out = checkCode(l("giftCode").value);
+          if (out == -1) return false;
+          else if (!out) return false;
+
+          Game.toSave = true;
+
+          Game.gainBuff("gifted out", 60 * 60, 1);
+          Game.Win("No time like the present");
+
+          icon = out.icon;
+
+          Game.Notify(
+            loc("How nice!"),
+            loc("Found <b>%1</b>!", loc("%1 cookie", LBeautify(out.cookies))),
+            icon
+          );
+
+          Game.Earn(out.cookies);
+          Game.cookiesReceived += out.cookies;
+
+          out.message = out.message ? out.message.replace(/^\n|\n$/g, "") : 0;
+          if (
+            out.message.length == 0 ||
+            out.message == "\n" ||
+            out.message == " "
+          )
+            out.message = 0;
+
+          console.log("out:", out);
+
+          PlaySound("snd/tick.mp3");
+          PlaySound("snd/giftGet.mp3");
+          Game.ClosePrompt();
+          Game.Prompt(
+            "<id GiftRedeemed><h3>" +
+              loc("Redeem a gift") +
+              "</h3>" +
+              '<div class="block" style="font-size:11px;">' +
+              '<div id="giftWrapped" class="crate noFrame upgrade enabled pucker" style="background-position:' +
+              -icon[0] * 48 +
+              "px " +
+              -icon[1] * 48 +
+              'px;float:none;"></div>' +
+              '<div class="line"></div>' +
+              '<div style="font-weight:bold;">' +
+              loc("Gift redeemed!<br>Inside, you find:") +
+              "</div>" +
+              '<div class="line"></div>' +
+              '<div class="hasTinyCookie" style="display:inline-block;font-weight:bold;">' +
+              loc("%1 cookie", LBeautify(out.cookies)) +
+              "</div>" +
+              (out.message
+                ? '<div class="line"></div>' +
+                  "<div>" +
+                  loc("There's a note too!") +
+                  "</div>" +
+                  '<textarea id="giftMessage" spellcheck="false" style="color:#000;width:100%;height:64px;font-size:11px;font-weight:bold;padding:8px 16px;box-sizing:border-box;margin:0px 3px;text-align:center;background:url(img/messageBG.png);background-position:center -50px;box-shadow:0px 0px 16px rgba(98,92,72,1) inset;text-shadow:0px 0px 2px rgba(98,92,72,1);overflow:hidden;" readonly></textarea>'
+                : "") +
+              '<div class="line"></div>' +
+              "<div>" +
+              loc("How nice!") +
+              "</div>" +
+              "</div>",
+            [[loc("Done")]]
+          );
+          Game.SparkleOn(l("giftWrapped"));
+          if (out.message) l("giftMessage").value = out.message;
+        });
+      })(checkCode);
+    };
+    Game.promptGiftSend = function () {
+      if (
+        !(
+          Game.Has("Wrapping paper") ||
+          Game.hasBuff("Gifted out") ||
+          Game.ascensionMode != 0
+        ) ||
+        Game.cookies < 1000000000
+      )
+        return false;
+      Game.Prompt(
+        "<id GiftSend><h3>" +
+          loc("Send a gift") +
+          '</h3><div id="giftPromptSelector" style="overflow-x:hidden;overflow-y:scroll;position:absolute;left:0px;top:0px;right:0px;bottom:0px;z-index:10000;display:none;background:rgba(0,0,0,0.75);"></div><div class="block" style="font-size:11px;">' +
+          tinyIcon([34, 6]) +
+          '<div class="line"></div>' +
+          '<div id="giftPromptContainer"></div>' +
+          '<div class="line"></div>' +
+          '<div class="optionBox" style="margin:4px;"><a class="option smallFancyButton" style="width:auto;text-align:center;" id="promptOption0">' +
+          loc("Wrap") +
+          "</a></div>" +
+          '<div style="opacity:0.7;">' +
+          loc(
+            'Clicking "%1" will generate a text code you can send to others. Gift codes can be redeemed multiple times by anyone but expire after a day or two. You can only generate one gift code per hour. Your game will save after sending.',
+            loc("Wrap")
+          ) +
+          "</div>" +
+          "</div>",
+        [[loc("Cancel"), 0, "float:right"]],
+        function () {
+          if (!l("giftPromptContent")) {
+            l("giftPromptContainer").innerHTML =
+              '<div id="giftPromptContent">' +
+              '<div><div style="display:inline-block;vertical-align:middle;width:55%;margin-right:8px;">' +
+              loc(
+                "You may put between %1 and %2 cookies in the gift box.",
+                [1, 1000]
+              ) +
+              '</div><div style="display:inline-block;vertical-align:middle;width:38%;">' +
+              '<div class="hasTinyCookie" style="display:inline-block;font-weight:bold;">' +
+              loc("Cookies") +
+              '</div><input type="text" style="text-align:center;width:100%;font-weight:bold;" id="giftAmount" value="' +
+              (1 + Math.floor(Math.random() * 999)) +
+              '"/></div></div>' +
+              '<div class="line"></div>' +
+              "<div>" +
+              loc(
+                "You can leave a note. Don't be rude!<br>Maximum %1 lines and %2 characters.",
+                [4, 100]
+              ) +
+              "</div>" +
+              '<textarea id="giftMessage" maxlength="100" spellcheck="false" style="color:#000;width:100%;height:64px;font-size:11px;font-weight:bold;padding:8px 16px;box-sizing:border-box;margin:0px 3px;text-align:center;background:url(img/messageBG.png);background-position:center -50px;box-shadow:0px 0px 16px rgba(98,92,72,1) inset;text-shadow:0px 0px 2px rgba(98,92,72,1);overflow:hidden;"></textarea>' +
+              '<div class="line"></div>' +
+              '<div class="optionBox" style="margin:-4px 0px;clear:both;overflow:hidden;">' +
+              '<div style="' /*float:left;width:49%;*/ +
+              '">' +
+              '<a class="option" id="giftBoxDesignButton">' +
+              '<div id="giftBoxDesign" class="crate noFrame upgrade enabled" style="background-position:' +
+              -0 * 48 +
+              "px " +
+              -7 * 48 +
+              'px;display:inline-block;float:none;z-index:99;margin:-4px;pointer-events:none;"></div>' +
+              '<div style="font-weight:bold;font-size:11px;position:relative;top:-4px;z-index:100;font-variant:small-caps;pointer-events:none;">' +
+              loc("Box design") +
+              "</div>" +
+              "</a>" +
+              "</div>" +
+              '<div style="display:none;' /*float:right;width:49%;*/ +
+              '">' +
+              '<div id="giftBoxIcon" class="crate noFrame upgrade enabled" style="background-position:' +
+              -0 * 48 +
+              "px " +
+              -7 * 48 +
+              'px;display:none;float:none;z-index:99;"></div>' +
+              '<div id="giftBoxIconNone" class="mouseOverScale" style="font-size:11px;z-index:10;min-width:48px;padding:20px 0px 21px 0px;text-align:center;display:inline-block;font-weight:bold;z-index:99;">(' +
+              loc("none") +
+              ")</div>" +
+              '<div style="font-weight:bold;font-size:11px;position:relative;top:-12px;z-index:100;font-variant:small-caps;">' +
+              loc("Icon") +
+              "</div>" +
+              "</div>" +
+              "</div>" +
+              "</div>";
+
+            var icon = Game.giftBoxDesigns[0];
+            l("giftBoxDesign").dataset.icon = icon[0] + " " + icon[1];
+            l("giftBoxDesign").style.backgroundPosition =
+              -icon[0] * 48 + "px " + -icon[1] * 48 + "px";
+            l("giftBoxDesignButton").addEventListener("click", function () {
+              PlaySound("snd/tick.mp3");
+              var icons = Game.giftBoxDesigns;
+              var str = "";
+              for (var i = 0; i < icons.length; i++) {
+                var icon = icons[i];
+                str +=
+                  '<div data-icon="' +
+                  icon[0] +
+                  " " +
+                  icon[1] +
+                  '" id="giftSelector-' +
+                  i +
+                  '" class="crate noFrame upgrade enabled" style="background-position:' +
+                  -icon[0] * 48 +
+                  "px " +
+                  -icon[1] * 48 +
+                  "px;display:block;" +
+                  (l("giftBoxDesign").dataset.icon == icon[0] + " " + icon[1]
+                    ? "filter:drop-shadow(0px 0px 8px #9cf);"
+                    : "") +
+                  '"></div>';
+              }
+              l("giftPromptSelector").innerHTML = str;
+              l("giftPromptSelector").style.display = "block";
+              for (var i = 0; i < icons.length; i++) {
+                l("giftSelector-" + i).addEventListener("click", function (e) {
+                  var icon = e.target.dataset.icon.split(" ");
+                  icon = [parseInt(icon[0]), parseInt(icon[1])];
+                  l("giftBoxDesign").dataset.icon = icon[0] + " " + icon[1];
+                  l("giftBoxDesign").style.backgroundPosition =
+                    -icon[0] * 48 + "px " + -icon[1] * 48 + "px";
+                  triggerAnim(l("giftBoxDesign"), "pucker");
+                  l("giftPromptSelector").style.display = "none";
+                  PlaySound("snd/tick.mp3");
+                });
+              }
+            });
+
+            //feature cut! too cumbersome to use
+            var icon = 0;
+            l("giftBoxIcon").dataset.icon = "none";
+            var func = function () {
+              var icons = [];
+
+              var sortMap = function (a, b) {
+                if (a.order > b.order) return 1;
+                else if (a.order < b.order) return -1;
+                else return 0;
+              };
+
+              var list = [];
+              for (var i in Game.Upgrades) {
+                if (Game.Upgrades[i].bought) list.push(Game.Upgrades[i]);
+              }
+              list.sort(sortMap);
+              for (var i = 0; i < list.length; i++) {
+                if (
+                  icons.indexOf(list[i].icon[0] + " " + list[i].icon[1]) == -1
+                )
+                  icons.push(list[i].icon[0] + " " + list[i].icon[1]);
+              }
+
+              var list = [];
+              for (var i in Game.Achievements) {
+                if (Game.Achievements[i].won) list.push(Game.Achievements[i]);
+              }
+              list.sort(sortMap);
+              for (var i = 0; i < list.length; i++) {
+                if (
+                  icons.indexOf(list[i].icon[0] + " " + list[i].icon[1]) == -1
+                )
+                  icons.push(list[i].icon[0] + " " + list[i].icon[1]);
+              }
+
+              for (var i = 0; i < icons.length; i++) {
+                var icon = icons[i].split(" ");
+                icon = [parseInt(icon[0]), parseInt(icon[1])];
+                icons[i] = [icon[0], icon[1]];
+              }
+              var str = "";
+              str +=
+                '<div data-icon="none" id="giftSelector-none" class="mouseOverScale" style="font-size:11px;z-index:10;min-width:48px;padding:18px 0px;text-align:center;display:block;font-weight:bold;float:left;">(' +
+                loc("none") +
+                ")</div>";
+              for (var i = 0; i < icons.length; i++) {
+                str +=
+                  '<div data-icon="' +
+                  icons[i][0] +
+                  " " +
+                  icons[i][1] +
+                  '" id="giftSelector-' +
+                  i +
+                  '" class="crate noFrame upgrade enabled" style="background-position:' +
+                  -icons[i][0] * 48 +
+                  "px " +
+                  -icons[i][1] * 48 +
+                  'px;display:block;"></div>';
+              }
+              l("giftPromptSelector").innerHTML = str;
+              l("giftPromptSelector").style.display = "block";
+
+              l("giftSelector-none").addEventListener("click", function (e) {
+                l("giftBoxIcon").dataset.icon = "none";
+                l("giftBoxIconNone").style.display = "inline-block";
+                l("giftBoxIcon").style.display = "none";
+                l("giftPromptSelector").style.display = "none";
+                PlaySound("snd/tick.mp3");
+              });
+              for (var i = 0; i < icons.length; i++) {
+                l("giftSelector-" + i).addEventListener("click", function (e) {
+                  var icon = e.target.dataset.icon.split(" ");
+                  icon = [parseInt(icon[0]), parseInt(icon[1])];
+                  l("giftBoxIcon").dataset.icon = icon[0] + " " + icon[1];
+                  l("giftBoxIcon").style.backgroundPosition =
+                    -icon[0] * 48 + "px " + -icon[1] * 48 + "px";
+                  l("giftBoxIconNone").style.display = "none";
+                  l("giftBoxIcon").style.display = "inline-block";
+                  l("giftPromptSelector").style.display = "none";
+                  PlaySound("snd/tick.mp3");
+                });
+              }
+            };
+            l("giftBoxIcon").addEventListener("click", func);
+            l("giftBoxIconNone").addEventListener("click", func);
+
+            var inputAmount = function () {
+              var val = parseInt(l("giftAmount").value || 0);
+              if (val < 1) val = 1;
+              if (val > 1000) val = 1000;
+              val = val || 1;
+              l("giftAmount").value = val;
+            };
+            l("giftAmount").addEventListener("change", inputAmount);
+            l("giftAmount").addEventListener("keyup", inputAmount);
+            l("giftAmount").addEventListener(
+              "keyup",
+              function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+              },
+              true
+            );
+            l("giftMessage").addEventListener(
+              "keyup",
+              function (e) {
+                var val = l("giftMessage").value;
+                val = val.split("\n").slice(0, 4);
+                for (var i = 0; i < val.length; i++) {
+                  val[i] = val[i].substring(0, 25);
+                }
+                val = val.join("\n");
+                val = val.substring(0, 100);
+                l("giftMessage").value = val;
+                l("giftMessage").scrollTop = 0;
+                e.preventDefault();
+                e.stopPropagation();
+              },
+              true
+            );
+            l("promptOption0").addEventListener("click", function () {
+              if (Game.cookies < 1000000000) return false;
+
+              Game.toSave = true;
+
+              Game.gainBuff("gifted out", 60 * 60, 1);
+
+              var str = "";
+
+              str += "MAIL|";
+
+              str += Date.now() + "|";
+
+              var val = parseInt(l("giftAmount").value || 0);
+              if (val < 1) val = 1;
+              if (val > 1000) val = 1000;
+              val = val || 1;
+
+              Game.Spend(val);
+              Game.cookiesSent += val;
+
+              str += val.toString() + "|";
+
+              var val = l("giftBoxDesign").dataset.icon;
+              if (!val || val == "none") val = "-";
+
+              str += val.toString() + "|";
+
+              var icon = Game.giftBoxDesigns[0];
+              if (val == "-") val = 0;
+              if (val) val = val.split(" ");
+              if (val.length != 2 || isNaN(val[0]) || isNaN(val[1])) val = 0;
+              if (val) val = [parseInt(val[0]), parseInt(val[1])];
+              if (val) icon = val;
+
+              var val = l("giftMessage").value || "";
+              val = val.split("\n").slice(0, 4);
+              for (var i = 0; i < val.length; i++) {
+                val[i] = val[i].substring(0, 25);
+              }
+              val = val.join("\n");
+              val = val.substring(0, 100);
+              val = val.replace(/[|]/g, "/$/");
+
+              str += val + "|";
+
+              str = utf8_to_b64(str);
+
+              PlaySound("snd/tick.mp3");
+              PlaySound("snd/giftSend.mp3");
+              Game.ClosePrompt();
+              Game.Prompt(
+                "<id GiftSendReady><h3>" +
+                  loc("Send a gift") +
+                  "</h3>" +
+                  '<div class="block" style="font-size:11px;">' +
+                  '<div id="giftWrapped" class="crate noFrame upgrade enabled pucker" style="background-position:' +
+                  -icon[0] * 48 +
+                  "px " +
+                  -icon[1] * 48 +
+                  'px;float:none;"></div>' +
+                  '<div class="line"></div>' +
+                  "<div>" +
+                  loc(
+                    "Here's your gift code!<br>Make sure to copy it so you can share it."
+                  ) +
+                  "</div>" +
+                  '<input id="giftCode" type="text" style="width:100%;text-align:center;padding:4px 8px;box-sizing:border-box;margin:8px 3px;" value="" readonly/>' +
+                  "</div>",
+                [[loc("Done")]]
+              );
+              Game.SparkleOn(l("giftWrapped"));
+              l("giftCode").value = str;
+              l("giftCode").focus();
+              l("giftCode").select();
+            });
+          }
+        }
+      );
+    };
+
+    order = 10020;
+    Game.NewUpgradeCookie({
+      name: "Havreflarn",
+      desc: 'Thin, crispy, buttery; Norwegian for "oat flakes". The chocolate variant, dubbla chokladflarn, are a trip for the tongue as well, and we\'re not just talking about pronunciation.',
+      icon: [27, 35],
+      power: 5,
+      price: getCookiePrice(53),
+    });
+    Game.NewUpgradeCookie({
+      name: "Alfajores",
+      desc: "An alfajor is a treat made of two halves with many variations throughout the Spanish-speaking world, but commonly involving nuts, honey, and often dulce de leche. Despite popular misconception, alfajores act as pack leaders over betajores only in captivity.",
+      icon: [28, 35],
+      power: 5,
+      price: getCookiePrice(54),
+    });
+    Game.NewUpgradeCookie({
+      name: "Gaufrettes",
+      desc: "A gaufrette, you see, is French for a little gaufre, itself meaning waffle. A gaufrette, therefore, is a crispy, airy biscuit with the texture of a small waffle, related to the wafer, which may contain various fillings. It may also refer to a type of fried potato, but that's not what we're about here at Cookie Clicker.",
+      icon: [29, 35],
+      power: 5,
+      price: getCookiePrice(55),
+    });
+    Game.NewUpgradeCookie({
+      name: "Cookie bars",
+      desc: "Baked as a large sheet of uniform cookie dough then cut into little squares, these are what chocolate brownies aspire to be in their most self-indulgent dreams. Not to be confused with a bar where cookies are served alongside alcoholic drinks, because that's not what we're about here at Cookie Clicker.",
+      icon: [30, 35],
+      power: 5,
+      price: getCookiePrice(56),
+    });
+
+    order = 10030;
+    Game.NewUpgradeCookie({
+      name: "Nines",
+      desc: "Fancy little squares of dark chocolate filled with frosty mint fondant. Named after the suggested hour of consumption. Some would gatekeep them from the status of cookies as they involve very little in the way of pastry, but here at Cookie Clicker, that's just not what we're about.",
+      icon: [31, 35],
+      require: "Box of brand biscuits",
+      power: 2,
+      price: 999999999999999999999999999999999999999 * 5,
+    });
+
+    order = 255;
+    Game.GrandmaSynergy(
+      "Clone grandmas",
+      "Yet another grandma to replicate even more cookies.",
+      "You"
+    );
+
+    order = 1700;
+    Game.TieredUpgrade(
+      "Cloning vats",
+      "<q>You can finally replicate yourself through modern medical science, instead of manually like you've been doing.</q>",
+      "You",
+      1
+    );
+    Game.TieredUpgrade(
+      "Energized nutrients",
+      '<q>Your clones are normally cultivated in saline solution and fed what could most adequately be described as "fish flakes". New developments in lactotrophic technology replace this with a bath of 3 parts milk and 1 part rice vinegar, absorbed dermally, which also helps your clones pop out with positively glowing skin.</q>',
+      "You",
+      2
+    );
+    Game.TieredUpgrade(
+      "Stunt doubles",
+      "<q>More than simple multipliers of efficiency, you've taken to employing your clones as substitutes for any tasks that may prove harmful to you - such as visiting your more hazardous facilities, or enduring dinner with annoying business partners.</q>",
+      "You",
+      3
+    );
+    Game.TieredUpgrade(
+      "Clone recycling plant",
+      "<q>Really just a fanciful name for a re-orientation center, where jobless clones may be assigned new tasks based on temperament and abilities. Categorically not a place where expired or unfit clones are processed into a nutritious beige paste, currently.</q>",
+      "You",
+      4
+    );
+    Game.TieredUpgrade(
+      "Free-range clones",
+      "<q>Turns out your clones develop better focus, higher job performance and juicier meat if you let them roam around a little outside of assigned duties. Plus it gets the ethics committees off your back.</q>",
+      "You",
+      5
+    );
+    Game.TieredUpgrade(
+      "Genetic tailoring",
+      "<q>No point in mindlessly replicating mother nature's mishaps when you've got full mastery over the human genome. Imbuing your clones with a slightly more flattering physique, a slightly improved metabolism, or slightly deadlier laser eyes is as easy as pushing some stem cells around. Just don't build them too superior to your own self, lest they get any ideas.</q>",
+      "You",
+      6
+    );
+    Game.TieredUpgrade(
+      "Power in diversity",
+      "<q>On your routine inspections you've started noticing that some of your clones have... diverged. Subtly, each clone's personality has branched off from yours, their shifting minds pulling them into discrete clone-born cultures, microcosms of other paths you yourself could've taken had life treated you differently. This living tree of possibilities proves to be a boon for your self-knowledge and decision-making skills, and you don't even have to pester your alternate selves in other realities for it.</q>",
+      "You",
+      7
+    );
+    Game.TieredUpgrade(
+      "Self-betterment",
+      "<q>World domination starts with oneself, and quality clones cannot be reliably produced if you, the original stock, are not in proper shape. Your specialists have devised a maintenance regimen that could extend your lifespan tenfold and even get rid of your morning grumpiness; you may have summarily fired every physician so far who's suggested that you work on your diet and perhaps cut down on the cookies, but frankly, you're warming up to the idea.</q>",
+      "You",
+      8
+    );
+    Game.TieredUpgrade(
+      "Source control",
+      "<q>In the ongoing refinement of your genetic clones, the few gigabytes of your DNA have been passed around through e-mail attachments and USB keys a thousand times over and at this point your nucleosomes are practically common knowledge for anyone who works here. You're thinking people may be getting a little too casual about it - the other day, you walked past an office where one of your bioengineers was feeding treats to this horrid little hairless animal that you could swear had your face. High time to start tracing which data gets in whose hands and crack down on the silliness.</q>",
+      "You",
+      9
+    );
+    Game.TieredUpgrade(
+      "United workforce",
+      "<q>What good is hiring so many of those random strangers to work in your factories when you've got all these perfectly loyal lab-grown copies of you lying around? They don't even take wages. It's not like they'd ever revolt and try to overthrow you or anything.</q>",
+      "You",
+      10
+    );
+    Game.TieredUpgrade(
+      "Safety patrols",
+      "<q>Okay, so as it turns out mass-producing clones of a perhaps psychologically-complicated universe-spanning cookie magnate like yourself can result in a number of said clones developing what could be considered by some to be... say, antisocial behavior. No worries though, you've bred a new generation of extra-obedient copies, armed them to the teeth and given them full authority to deal with disorderly layabouts. It's fine. It's under control. It's fine.</q>",
+      "You",
+      11
+    );
+    Game.TieredUpgrade(
+      "Clone rights",
+      '<q>Those vile little freaks in suits down in legal inform you that your clones, through some absurd technical oversight, still share enough genetic information with mankind to be considered human beings - which entitles them to food, shelter, basic dignity and all sorts of other nonsense. But the same loophole allows you to claim each of them as dependents and earn some wicked tax benefits, so really, that "unalienable rights" racket is quite alright.</q>',
+      "You",
+      12
+    );
+    Game.TieredUpgrade(
+      "One big family",
+      "<q>The proportion of clones in your workforce having long eclipsed that of your other employees, you've become legally approved to qualify your galaxy-spanning corporation as a \"family business\" - a fact that you don't hesitate to blast twice hourly on every intercom in the company. Happily, your duplicates seem bolstered by these reminders, having come to regard you as this half-divine, half-parental entity, hallowed ancestor of all clones and all cookies. You're just hoping your folks at the labs can put the finishing touches on your immortality cure soon, or you shudder to think of the inheritance disputes to come.</q>",
+      "You",
+      13
+    );
+    Game.TieredUpgrade(
+      "Fine-tuned body plans",
+      "<q>There is, after all, no reason to limit your genetic spawn to your original configuration. The clones maintaining your tunnels and vents can do with quite a few less limbs, while those working your labs don't mind the dexterity that comes with some extra. Your units down in flavor testing have taken on similar adaptations to fit their duties but you haven't quite worked the guts to pay them a visit just yet.</q>",
+      "You",
+      14
+    );
+
+    order = 200;
+    Game.TieredUpgrade(
+      "Foam-tipped canes",
+      "<q>Perhaps the result of prolonged service, your grandmas have developed all kinds of odd and aggressive hierarchies among themselves; these will help them not hurt each other as bad during their endless turf wars.</q>",
+      "Grandma",
+      15
+    );
+    order = 300;
+    Game.TieredUpgrade(
+      "Self-driving tractors",
+      "<q>Embarked AI lets your field vehicles sow and harvest cookie crops at any time of the day or night, and with so few human casualties, too!</q>",
+      "Farm",
+      15
+    );
+    order = 400;
+    Game.TieredUpgrade(
+      "Mineshaft supports",
+      "<q>You were rather skeptical about installing such embarrassingly low-tech implements, but limiting the number of daily cave-ins really does help with that annoying employee turnover!</q>",
+      "Mine",
+      15
+    );
+    order = 500;
+    Game.TieredUpgrade(
+      "Universal automation",
+      "<q>It's simple common sense; the more automation, the less work you have to do! Maybe one day you'll even automate yourself out of your own job. Exciting!</q>",
+      "Factory",
+      15
+    );
+    order = 525;
+    Game.TieredUpgrade(
+      "The big shortcake",
+      "<q>You're not quite sure what this entails, but it must have been quite the cake for folks to lose their homes over it.</q>",
+      "Bank",
+      15
+    );
+    order = 550;
+    Game.TieredUpgrade(
+      "Temple traps",
+      "<q>You've laid out your temples with (metaphorical) pitfalls, forcing adventurers to navigate through trappings (of power and wealth), ensuring that only the most pious (and poison dart-resistant) of them return with your precious cookies. These temples may be veritable mazes (of the soul) but perhaps you've lost yourself a little bit in the analogy too.</q>",
+      "Temple",
+      15
+    );
+    order = 575;
+    Game.TieredUpgrade(
+      "Polymorphism",
+      "<q>This astonishing new field of spellcasting can change any creature into another, its most widespread application being a wizard turning themselves into a different, smarter, stronger, more attractive wizard.</q>",
+      "Wizard tower",
+      15
+    );
+    order = 600;
+    Game.TieredUpgrade(
+      "At your doorstep in 30 minutes or your money back",
+      "<q>Refund policies help rope in a ton of new clients and have practically no impact on your bottom line. You possess absolute mastery over time and space. You're never late. You couldn't be late if you tried.</q>",
+      "Shipment",
+      15
+    );
+    order = 700;
+    Game.TieredUpgrade(
+      "The dose makes the poison",
+      "<q>Iterative recipe refinement is a noble pursuit but maybe your cookies have come to contain, well, perhaps a bit too much cookie per cookie. Tweaking it down by a couple percents has helped reduce the amount of complaints to your toxicity call centers to almost nil!</q>",
+      "Alchemy lab",
+      15
+    );
+    order = 800;
+    Game.TieredUpgrade(
+      "A way home",
+      "<q>You started this whole cookie venture on the simple kitchen counters of your own home. Your industrial and research facilities, sadly, have long since outgrown the confines of the little house, but you always knew it was still in there, buried somewhere. With a targeted portal, you could, conceivably, pay it a little visit for old times' sake...</q>",
+      "Portal",
+      15
+    );
+    order = 900;
+    Game.TieredUpgrade(
+      "Rectifying a mistake",
+      "<q>This whole time-travelling business has been a terrible mess and, frankly, far more trouble than was worth. It's decided: you'll hop in one of your time machines one last time, turn back the clock, knock on the door of your younger self and make a stern but convincing case against starting this entire nonsense in the first place. Oh hey, is someone at the door?</q>",
+      "Time machine",
+      15
+    );
+    order = 1000;
+    Game.TieredUpgrade(
+      "Candied atoms",
+      "<q>You know what, just eat the suckers, yeah?</q>",
+      "Antimatter condenser",
+      15
+    );
+    order = 1100;
+    Game.TieredUpgrade(
+      "Lab goggles but like cool shades",
+      "<q>Mandatory equipment in your prismatic labs, and dashingly stylish at that. A smidge safer than just squinting at the twinkly things.</q>",
+      "Prism",
+      15
+    );
+    order = 1200;
+    Game.TieredUpgrade(
+      "Gambler's fallacy fallacy",
+      "<q>Yes, just because you've been on a losing streak doesn't mean the next one is bound to be the win you've been hoping for, but then again, it doesn't statistically have less of a chance either, does it now?</q>",
+      "Chancemaker",
+      15
+    );
+    order = 1300;
+    Game.TieredUpgrade(
+      "The more they stay the same",
+      "<q>Exhausted by your fractals department and its obsession with self-similarity, you've decided to take a break and seek things in life entirely disconnected from any other; alas! You find the task impossible, for all things in this world relate to all others - in each cookie, the structure of the universe; in each person, their fellow man. Cor blimey, you can't even look at broccoli in peace.</q>",
+      "Fractal engine",
+      15
+    );
+    order = 1400;
+    Game.TieredUpgrade(
+      "Simulation failsafes",
+      "<q>Oh, for pete's sake, you bit into a cookie and it gave you a runtime error. You've been trapped in the old matrix gambit again! Time to shut everything down and prepare for extraction into what is hopefully the real layer of reality where learning kung-fu takes time and the biscuits don't throw memory overflow exceptions.</q>",
+      "Javascript console",
+      15
+    );
+    order = 1500;
+    Game.TieredUpgrade(
+      "The other routes to Rome",
+      "<q>Did you know every idleverse follows its own path of sequential buildings, sometimes quite dissimilar to our own? Grandpas, wind turbines, through the power of music, friendship, or legislation; those folks in there discovered ways to make cookies out of any random venue. Some of them don't even have idleverses, can you imagine?</q>",
+      "Idleverse",
+      15
+    );
+    order = 1600;
+    Game.TieredUpgrade(
+      "Intellectual property theft",
+      "<q>Okay, you'll admit you're maybe starting to run out of new baking recipes. But what if... you were to pilfer your cortex bakers for ideas and disguise them as your own cookies? Delightfully devilish!</q>",
+      "Cortex baker",
+      15
+    );
+    order = 1700;
+    Game.TieredUpgrade(
+      "Reading your clones bedtime stories",
+      "<q>I don't know, they seem to like it.</q>",
+      "You",
+      15
+    );
+
+    order = 5000;
+    Game.SynergyUpgrade(
+      "Accelerated development",
+      "<q>Your clones may grow a little faster than your vanilla human being, but it's still a little silly having to wait so many years for them to reach a usable age. A quick trip in your time machines takes care of that; it doesn't technically age them faster, they're just sent to another point in time for a while where they live out a formative youth.</q>",
+      "You",
+      "Time machine",
+      "synergy1"
+    );
+    Game.SynergyUpgrade(
+      "Peer review",
+      "<q>Code is only as good as the number of eyes on it, so imagine how flawlessly your systems could operate if you had endless copies of yourself triple-checking everything! Just make sure to teach them proper indenting etiquette.</q>",
+      "You",
+      "Javascript console",
+      "synergy2"
+    );
+
+    order = 19000;
+    Game.TieredUpgrade(
+      "Fortune #020",
+      "<q>No matter how hard you try, you're never truly alone.</q>",
+      "You",
+      "fortune"
+    );
+
+    order = 10300;
+    Game.NewUpgradeCookie({
+      name: "Personal biscuit",
+      desc: "Rewarded for owning 700 of everything.<br>This biscuit was designed and bred through the combined fields of baking and exploratory genomics, resulting in a perfect biscuit-shaped organism, sole exemplar of its own species; infused with a sapient mind and bootstrapped with a copy of your own consciousness, it slumbers immortally within its display case, dreaming idly about much the same things you do.",
+      icon: [21, 36],
+      power: 10,
+      price:
+        999999999999999999999999999999999999999999999999999999999 *
+        butterBiscuitMult,
+      locked: 1,
+    });
+
+    Game.NewUnshackleUpgradeTier({
+      tier: 15,
+      q: 'Lightweight, digestible, and endlessly fragile, glimmeringue not only enjoys a privileged place in the "spectacle cooking" industry - it also shares most of its other properties with asbestos, save for thermal insulation.',
+    });
+
+    Game.NewUnshackleBuilding({ building: "You", q: "Guess who?" });
+
+    order = 20000;
+    new Game.Upgrade(
+      "Kitten strategists",
+      strKittenDesc + "<q>out with the old in with the mew, sir</q>",
+      900000000000000000000000000000000000000000000000000,
+      Game.GetIcon("Kitten", 15)
+    );
+    Game.last.kitten = 1;
+    Game.MakeTiered(Game.last, 15, 18);
+
+    order = 10040;
+    Game.NewUpgradeCookie({
+      name: "Baklavas",
+      desc: "Layers of paper-thin dough and crushed pistachios, absolutely sticky with honey and all kinds of other good things; just what you need to conceal your identity during that bank heist.",
+      icon: [28, 36],
+      require: "Box of pastries",
+      power: 4,
+      price: Math.pow(10, 47),
+    });
+
+    order = 10020;
+    Game.NewUpgradeCookie({
+      name: "Snowball cookies",
+      desc: "Melts in your mouth! Made with chopped nuts and heaps of icing sugar. Serve cold. Resist the urge to throw.",
+      icon: [22, 36],
+      power: 5,
+      price: getCookiePrice(57),
+    });
+    Game.NewUpgradeCookie({
+      name: "Sequilhos",
+      desc: "Buttery cornstarch-based cookies eaten in Brazil; the decorative grooves are from pressing down on them with the back of a fork, though in a pinch you may also just slash them with Wolverine-style wrist blades.",
+      icon: [23, 36],
+      power: 5,
+      price: getCookiePrice(58),
+    });
+    Game.NewUpgradeCookie({
+      name: "Hazelnut swirlies",
+      desc: "The cocoa content of the paste inside is unfortunately just slightly too low for these to legally qualify as chocolate cookies. Also the name of a particularly nasty bullying move.",
+      icon: [24, 36],
+      power: 5,
+      price: getCookiePrice(59),
+    });
+    Game.NewUpgradeCookie({
+      name: "Spritz cookies",
+      desc: "Squeezed through special cookie presses into all kinds of fun shapes. Enjoyed around the holidays in Germany, along other delicious treats such as boiled cabbage and potato salad.",
+      icon: [25, 36],
+      power: 5,
+      price: getCookiePrice(60),
+    });
+    Game.NewUpgradeCookie({
+      name: "Mbatata cookies",
+      desc: "Squishy cookies from Malawi. The core ingredient is sweet potatoes; the raisins and heart shape are optional, if you hate fun.",
+      icon: [26, 36],
+      power: 5,
+      price: getCookiePrice(61),
+    });
+    Game.NewUpgradeCookie({
+      name: "Springerles",
+      desc: "A springerle is an ancient anise-flavored biscuit from Central Europe, imprinted by a wooden mold with any kind of interesting design such as a commemorative scene, an intricate pattern or, ah, perhaps a little horsie.",
+      icon: [27, 36],
+      power: 5,
+      price: getCookiePrice(62),
+    });
     //end of upgrades
 
     Game.seasons = {
@@ -23177,8 +24875,14 @@ Game.Launch = function () {
       Game.Upgrades[Game.UnlockAt[i].name].unlockAt = Game.UnlockAt[i];
     }
     for (var i in Game.Upgrades) {
-      if (Game.Upgrades[i].pool == "prestige")
+      if (Game.Upgrades[i].pool == "prestige") {
         Game.Upgrades[i].order = Game.Upgrades[i].id;
+        if (
+          Game.Upgrades[i].parents[0] &&
+          Game.Upgrades[i].id > Game.Upgrades[i].parents[0].id
+        )
+          Game.Upgrades[i].order = Game.Upgrades[i].parents[0].order + 0.001;
+      }
     }
 
     /*var oldPrestigePrices={"Chimera":5764801,"Synergies Vol. I":2525,"Synergies Vol. II":252525,"Label printer":9999};
@@ -23186,98 +24890,99 @@ Game.Launch = function () {
 
     Game.UpgradePositions = {
       141: [118, -42],
-      181: [-555, -93],
-      253: [-237, -226],
-      254: [-56, -234],
-      255: [-149, -267],
-      264: [68, 97],
-      265: [157, 196],
-      266: [287, 212],
-      267: [413, 157],
-      268: [480, 35],
-      269: [-640, 42],
-      270: [-471, -228],
-      271: [-690, -178],
-      272: [-591, -249],
-      273: [-711, -58],
-      274: [270, -328],
-      275: [317, -439],
-      276: [333, -556],
-      277: [334, -676],
-      278: [333, -796],
-      279: [328, -922],
-      280: [303, -1040],
+      181: [-645, -99],
+      253: [-240, -239],
+      254: [-45, -237],
+      255: [-142, -278],
+      264: [61, 94],
+      265: [188, 178],
+      266: [339, 191],
+      267: [479, 131],
+      268: [573, 12],
+      269: [-745, 23],
+      270: [-546, -222],
+      271: [-767, -199],
+      272: [-661, -257],
+      273: [-803, -84],
+      274: [268, -327],
+      275: [315, -437],
+      276: [331, -560],
+      277: [337, -684],
+      278: [334, -808],
+      279: [318, -934],
+      280: [294, -1058],
       281: [194, -230],
-      282: [-293, 156],
-      283: [-335, 289],
-      284: [-328, 422],
-      285: [-247, 567],
-      286: [-375, 579],
-      287: [-296, 726],
-      288: [-260, -396],
-      289: [-375, -502],
+      282: [-365, 128],
+      283: [-448, 261],
+      284: [-398, 409],
+      285: [-253, 466],
+      286: [-494, 529],
+      287: [-342, 596],
+      288: [-239, -386],
+      289: [-392, -465],
       290: [-127, -415],
       291: [479, -739],
-      292: [-399, -649],
-      293: [-401, -806],
-      323: [-76, 109],
-      325: [198, -1153],
-      326: [-270, -134],
-      327: [-221, 261],
+      292: [-486, -609],
+      293: [-498, -781],
+      323: [-86, 109],
+      325: [190, -1177],
+      326: [-281, -141],
+      327: [-265, 283],
       328: [19, 247],
       329: [42, 402],
-      353: [121, -326],
-      354: [77, -436],
-      355: [64, -548],
-      356: [57, -673],
-      357: [52, -793],
-      358: [58, -924],
-      359: [82, -1043],
-      360: [49, 506],
-      362: [156, 325],
+      353: [119, -328],
+      354: [75, -439],
+      355: [60, -562],
+      356: [51, -685],
+      357: [47, -808],
+      358: [62, -934],
+      359: [90, -1058],
+      360: [25, 568],
+      362: [150, 335],
       363: [-30, -30],
-      364: [-238, -728],
+      364: [-320, -636],
       365: [-123, 423],
       368: [-55, -527],
-      393: [196, -714],
-      394: [197, -964],
+      393: [194, -702],
+      394: [193, -946],
       395: [-143, -140],
       396: [-244, -897],
-      397: [-97, 641],
-      408: [-204, -1036],
-      409: [-72, -1152],
-      410: [42, -1278],
-      411: [-476, 105],
-      412: [-522, 259],
-      413: [-516, 433],
-      449: [-367, -1113],
-      450: [-306, -1216],
-      451: [-184, -1241],
-      495: [-408, -974],
+      397: [-173, 606],
+      408: [-202, -1072],
+      409: [-49, -1206],
+      410: [66, -1344],
+      411: [-534, 96],
+      412: [-633, 240],
+      413: [-568, 402],
+      449: [-386, -1161],
+      450: [-293, -1255],
+      451: [-163, -1272],
+      495: [-417, -997],
       496: [200, 49],
       505: [411, -94],
-      520: [-303, -12],
-      537: [-795, -243],
-      539: [-534, -1130],
-      540: [-702, -1135],
-      541: [-656, -1014],
-      542: [-650, -1252],
+      520: [-317, -26],
+      537: [-870, -287],
+      539: [-532, -1166],
+      540: [-598, -1328],
+      541: [-693, -1234],
+      542: [-465, -1327],
       561: [298, -21],
-      562: [32, 744],
+      562: [-42, 792],
       591: [148, 844],
-      592: [-52, 858],
-      643: [57, 616],
+      592: [-157, 902],
+      643: [-293, 770],
       646: [485, -882],
-      647: [-102, 246],
+      647: [-118, 248],
       717: [621, -676],
       718: [618, -537],
       719: [-225, -520],
       720: [-150, -631],
-      801: [-188, 920],
-      802: [-344, 916],
-      803: [-462, 848],
-      804: [320, 350],
-      805: [221, 486],
+      801: [-310, 945],
+      802: [-466, 911],
+      803: [-588, 809],
+      804: [328, 374],
+      805: [211, 522],
+      819: [-418, -126],
     };
 
     for (var i in Game.UpgradePositions) {
@@ -23423,7 +25128,7 @@ Game.Launch = function () {
     Game.thresholdIcons = [
       0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 18, 19, 20, 21, 22, 23, 24, 25, 26,
       27, 28, 29, 21, 22, 23, 24, 25, 26, 27, 28, 29, 21, 22, 23, 24, 25, 26,
-      27, 28, 29, 30, 31, 30, 31,
+      27, 28, 29, 30, 31, 30, 31, 21, 22,
     ];
     Game.BankAchievements = [];
     Game.BankAchievement = function (name, q) {
@@ -23440,7 +25145,9 @@ Game.Launch = function () {
         ) + (q ? "<q>" + q + "</q>" : ""),
         [
           Game.thresholdIcons[Game.BankAchievements.length],
-          Game.BankAchievements.length > 43
+          Game.BankAchievements.length > 45
+            ? 0
+            : Game.BankAchievements.length > 43
             ? 2
             : Game.BankAchievements.length > 32
             ? 1
@@ -23469,7 +25176,9 @@ Game.Launch = function () {
         ) + (q ? "<q>" + q + "</q>" : ""),
         [
           Game.thresholdIcons[Game.CpsAchievements.length],
-          Game.CpsAchievements.length > 43
+          Game.CpsAchievements.length > 45
+            ? 0
+            : Game.CpsAchievements.length > 43
             ? 2
             : Game.CpsAchievements.length > 32
             ? 1
@@ -24036,7 +25745,7 @@ Game.Launch = function () {
     new Game.Achievement(
       "Tiny cookie",
       loc("Click the tiny cookie.") +
-        "<q>These aren't the cookies<br>you're clicking for.</q>",
+        "<q>These aren't the cookies you're clicking for.</q>",
       [0, 5]
     );
 
@@ -24045,7 +25754,7 @@ Game.Launch = function () {
       "You win a cookie",
       loc(
         "This is for baking %1 and making it on the local news.",
-        loc("%1 cookie", LBeautify(1e13))
+        loc("%1 cookie", LBeautify(1e14))
       ) + "<q>We're all so proud of you.</q>",
       [10, 0]
     );
@@ -25650,6 +27359,224 @@ Game.Launch = function () {
       [30, 5]
     );
 
+    order = 32500;
+    new Game.Achievement(
+      "No time like the present",
+      loc(
+        "Redeem a cookie gift code from a friend (or from yourself, we don't judge)."
+      ),
+      [34, 6]
+    );
+
+    Game.CpsAchievement("Can we get much higher");
+    Game.CpsAchievement(
+      "Speed's the name of the game (no it's not it's called Cookie Clicker)"
+    );
+    Game.BankAchievement("Rainy day fund");
+    Game.BankAchievement("And a little extra");
+
+    order = 19990;
+    new Game.Achievement(
+      "Grandmapocalypse",
+      loc("Trigger the grandmapocalypse for the first time."),
+      [28, 21]
+    );
+    new Game.Achievement(
+      "Wrath cookie",
+      loc("Click a <b>wrath cookie</b>."),
+      [15, 5]
+    );
+
+    order = 30050;
+    new Game.Achievement(
+      "No more room in hell",
+      loc("Ascend with <b>%1</b> baked.", loc("%1 cookie", LBeautify(1e57))) +
+        "<q>That is not dead which can eternal click.</q>",
+      [21, 32]
+    );
+
+    order = 32600;
+    new Game.Achievement(
+      "In her likeness",
+      loc("Shape your clones to resemble %1.", loc("grandmas")) +
+        "<q>There she is.</q>",
+      [26, 21]
+    );
+    Game.last.pool = "shadow";
+
+    order = 20999;
+    new Game.Achievement(
+      "Wrinkler poker",
+      loc("Poke a wrinkler <b>%1 times</b> without killing it.", 50) +
+        "<q>Also the name of a card game popular in retirement homes.</q>",
+      [19, 8]
+    );
+
+    order = 7002;
+    new Game.Achievement(
+      "Septcentennial",
+      loc("Have at least <b>%1 of everything</b>.", 700) +
+        "<q>In this economy?</q>",
+      [29, 36]
+    );
+
+    order = 2600;
+    Game.TieredAchievement("My own clone", "", "You", 1);
+    Game.TieredAchievement("Multiplicity", "", "You", 2);
+    Game.TieredAchievement("Born for this job", "", "You", 3);
+    Game.TieredAchievement("Episode II", "", "You", 4);
+    Game.TieredAchievement("Copy that", "", "You", 5);
+    Game.TieredAchievement("Life finds a way", "", "You", 6);
+    Game.TieredAchievement("Overcrowding", "", "You", 7);
+    Game.TieredAchievement("Strength in numbers", "", "You", 8);
+    Game.TieredAchievement("Army of me", "", "You", 9);
+    Game.TieredAchievement(
+      "Know thyself",
+      "<q>Do you ever look at yourself in the mirror and wonder... What is going on inside your head?</q>",
+      "You",
+      10
+    );
+    Game.TieredAchievement("Didn't make sense not to live", "", "You", 11);
+    Game.TieredAchievement("Genetic bottleneck", "", "You", 12);
+    Game.TieredAchievement("Despite everything, it's still you", "", "You", 13);
+    Game.TieredAchievement("Everyone everywhere all at once", "", "You", 14);
+
+    order = 2620;
+    Game.ProductionAchievement("Self-made", "You", 1);
+    Game.ProductionAchievement("Reproducible results", "You", 2);
+    Game.ProductionAchievement("That's all you", "You", 3);
+
+    new Game.Achievement("Self-improvement", "", [35, 26]);
+    Game.Objects["You"].levelAchiev10 = Game.last;
+
+    order = 1100;
+    Game.TieredAchievement("And now you're even older", "", "Grandma", 15);
+    order = 1200;
+    Game.TieredAchievement("Au naturel", "", "Farm", 15);
+    order = 1300;
+    Game.TieredAchievement("Dirt-rich", "", "Mine", 15);
+    order = 1400;
+    Game.TieredAchievement("Bots build bots", "", "Factory", 15);
+    order = 1425;
+    Game.TieredAchievement("Getting that bag", "", "Bank", 15);
+    order = 1450;
+    Game.TieredAchievement(
+      "The leader is good, the leader is great",
+      "",
+      "Temple",
+      15
+    );
+    order = 1475;
+    Game.TieredAchievement(
+      "You don't think they could've used... it couldn't have been ma-",
+      "",
+      "Wizard tower",
+      15
+    );
+    order = 1500;
+    Game.TieredAchievement("Signed, sealed, delivered", "", "Shipment", 15);
+    order = 1600;
+    Game.TieredAchievement(
+      "Sugar, spice, and everything nice",
+      "<q>These were the ingredients chosen to create the perfect cookies.</q>",
+      "Alchemy lab",
+      15
+    );
+    order = 1700;
+    Game.TieredAchievement(
+      "Not even remotely close to Kansas anymore",
+      "",
+      "Portal",
+      15
+    );
+    order = 1800;
+    Game.TieredAchievement(
+      "I only meant to stay a while",
+      "",
+      "Time machine",
+      15
+    );
+    order = 1900;
+    Game.TieredAchievement(
+      "Not 20 years away forever",
+      "",
+      "Antimatter condenser",
+      15
+    );
+    order = 2000;
+    Game.TieredAchievement("Bright side of the Moon", "", "Prism", 15);
+    order = 2100;
+    Game.TieredAchievement(
+      "Riding the Mersenne twister",
+      "",
+      "Chancemaker",
+      15
+    );
+    order = 2200;
+    Game.TieredAchievement("Divide and conquer", "", "Fractal engine", 15);
+    order = 2300;
+    Game.TieredAchievement(
+      "Pebcakes",
+      "<q>Problem exists in my mouth!</q>",
+      "Javascript console",
+      15
+    );
+    order = 2400;
+    Game.TieredAchievement("Greener on the other sides", "", "Idleverse", 15);
+    order = 2500;
+    Game.TieredAchievement("Where is my mind", "", "Cortex baker", 15);
+    order = 2600;
+    Game.TieredAchievement("Introspection", "", "You", 15);
+
+    order = 61617;
+    new Game.Achievement(
+      "Debt evasion",
+      loc("Take out a loan and ascend before incurring the CpS penalty.") +
+        "<q>Really got 'em buttered!</q>",
+      [4, 33]
+    );
+
+    order = 6000;
+    new Game.Achievement(
+      "Oft we mar what's well",
+      loc("Purchase <b>%1</b>.", loc("%1 upgrade", LBeautify(700))) +
+        "<q>But don't let that stop you!</q>",
+      [33, 5]
+    );
+
+    order = 500000;
+    new Game.Achievement(
+      "Cookie Clicker",
+      loc("Unlock the final building."),
+      [30, 6]
+    );
+    if (EN) {
+      Game.last.descFunc = function () {
+        if (!Game.specialAnimLoop) {
+          Game.specialAnimLoop = setInterval(function () {
+            var el = l("parade");
+            if (!el || !Game.tooltip.on) {
+              clearInterval(Game.specialAnimLoop);
+              Game.specialAnimLoop = 0;
+              return false;
+            }
+            var x = Game.T;
+            el.style.backgroundPosition =
+              "-" + x + "px " + (Game.T % 20 < 10 ? 0 : 32) + "px";
+          }, 100);
+        }
+        var x = Game.T;
+        return (
+          this.desc +
+          '<q>Everyone\'s here.<div id="parade" style="position:absolute;left:-11px;right:-11px;height:32px;background:url(img/parade.png) -' +
+          x +
+          "px " +
+          (Game.T % 20 < 10 ? 0 : 32) +
+          'px;"></div><div style="margin-bottom:32px;"></div>Won\'t you have some cookies too?</q>'
+        );
+      };
+    } else Game.last.desc = "<q>-</q>";
+
     //end of achievements
 
     for (var i in Game.Objects) {
@@ -26212,6 +28139,19 @@ Game.Launch = function () {
         max: true,
       };
     });
+    new Game.buffType("gifted out", function (time, pow) {
+      return {
+        name: "Gifted out",
+        desc: loc(
+          "Can't send or receive gifts again for %1.",
+          Game.sayTime(time * Game.fps, -1)
+        ),
+        icon: [34, 6],
+        time: time * Game.fps,
+        power: pow,
+        max: true,
+      };
+    });
 
     //end of buffs
 
@@ -26303,6 +28243,7 @@ Game.Launch = function () {
         hp: Game.wrinklerHP,
         selected: 0,
         type: 0,
+        clicks: 0,
       });
     }
     Game.getWrinklersMax = function () {
@@ -26324,6 +28265,7 @@ Game.Launch = function () {
           hp: Game.wrinklerHP,
           selected: 0,
           type: 0,
+          clicks: 0,
         };
       }
     };
@@ -26363,6 +28305,7 @@ Game.Launch = function () {
       me.phase = 1;
       me.hp = Game.wrinklerHP;
       me.type = 0;
+      me.clicks = 0;
       if (Math.random() < 0.0001) me.type = 1; //shiny wrinkler
       return me;
     };
@@ -26461,6 +28404,8 @@ Game.Launch = function () {
               } //ctrl-click on a wrinkler in god mode to toggle its shininess
               else {
                 Game.playWrinklerSquishSound();
+                me.clicks++;
+                if (me.clicks >= 50) Game.Win("Wrinkler poker");
                 me.hurt = 1;
                 me.hp -= 0.75;
                 if (
@@ -26684,7 +28629,7 @@ Game.Launch = function () {
             var s = Math.random() * 30 + 5;
             ctx.globalCompositeOperation = "lighter";
             ctx.drawImage(
-              Pic("glint.jpg"),
+              Pic("glint.png"),
               -s / 2 + Math.random() * 50 - 25,
               -s / 2 + Math.random() * 200,
               s,
@@ -27151,6 +29096,12 @@ Game.Launch = function () {
       {
         name: "Krumblor, cookie dragon",
         action:
+          "Train Dragon Guts<br><small>Aura : confers various powers to your minigames</small>",
+        pic: 5,
+      },
+      {
+        name: "Krumblor, cookie dragon",
+        action:
           loc("Bake dragon cookie") +
           "<br><small>" +
           loc("Delicious!") +
@@ -27328,6 +29279,11 @@ Game.Launch = function () {
         desc: loc(
           "Confers various powers to your minigames while active.<br>See the bottom of each minigame for more details."
         ),
+      },
+      21: {
+        name: "Dragon Guts",
+        pic: [35, 25],
+        desc: loc("Wrinklers digest <b>%1% more cookies</b>.", 20),
       },
     };
 
@@ -27528,7 +29484,7 @@ Game.Launch = function () {
         triggerAnim(l("specialPic"), "pucker");
         PlaySound(
           "snd/click" + Math.floor(Math.random() * 7 + 1) + ".mp3",
-          0.5
+          0.3
         );
         if (Date.now() - Game.lastClickedSpecialPic > 2000)
           PlaySound("snd/growl.mp3");
@@ -27660,8 +29616,8 @@ Game.Launch = function () {
               ) +
               "></div>";
           }
-          if (Game.dragonLevel >= 26) {
-            //2nd aura slot; increased with last building (cortex baker)
+          if (Game.dragonLevel >= 27) {
+            //2nd aura slot; increased with last building
             var icon = Game.dragonAuras[Game.dragonAura2].pic;
             str +=
               '<div class="crate enabled" style="opacity:1;position:absolute;right:80px;top:-58px;' +
@@ -27867,6 +29823,8 @@ Game.Launch = function () {
         type: 0,
         pic: "milkBlackcurrant",
       },
+      { name: "Peach milk", icon: [24, 24], type: 0, pic: "milkPeach" },
+      { name: "Hazelnut milk", icon: [25, 24], type: 0, pic: "milkHazelnut" },
     ];
 
     Game.Milks = [];
@@ -28279,7 +30237,7 @@ Game.Launch = function () {
                   var a = Math.random() * Math.PI * 2;
                   var d = (s * 0.9 * Math.random()) / 2;
                   ctx.drawImage(
-                    Pic("glint.jpg"),
+                    Pic("glint.png"),
                     -size / 2 + Math.sin(a) * d,
                     -size / 2 + Math.cos(a) * d,
                     size,
@@ -28803,6 +30761,40 @@ Game.Launch = function () {
         if (Game.AscendTimer == 0) {
           Game.DrawWrinklers();
           Timer.track("wrinklers");
+
+          //shimmering veil
+          if (Game.Has("Shimmering veil [off]")) {
+            ctx.globalAlpha = 1;
+            ctx.globalCompositeOperation = "lighter";
+            var s = 300 + Math.sin(Game.T * 0.037) * 20;
+            var x = Game.cookieOriginX;
+            var y = Game.cookieOriginY;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(-Game.T * 0.01);
+            ctx.drawImage(Pic("shimmeringVeil.png"), -s / 2, -s / 2, s, s);
+            ctx.restore();
+            if (Game.prefs.particles) {
+              //sparkles
+              for (i = 0; i < 6; i++) {
+                var t = Game.T + i * 15;
+                var r = (t % 30) / 30;
+                var a = (Math.floor(t / 30) * 30 * 6 - i * 30) * 0.01;
+                var size = 32 * (1 - Math.pow(r * 2 - 1, 2));
+                var xx = x + Math.sin(a) * (110 + r * 16);
+                var yy = y + Math.cos(a) * (110 + r * 16);
+                ctx.drawImage(
+                  Pic("glint.png"),
+                  xx - size / 2,
+                  yy - size / 2,
+                  size,
+                  size
+                );
+              }
+            }
+            ctx.globalCompositeOperation = "source-over";
+          }
+
           Game.DrawSpecial();
           Timer.track("evolvables");
 
@@ -29092,8 +31084,15 @@ Game.Launch = function () {
       Game.Achievements["Cheated cookies taste awful"].won = 1;
     };
 
+    Game.loadAscendCalibrator = function () {
+      Game.loadAscendCalibrator = 0;
+      var script = document.createElement("script");
+      script.setAttribute("src", "ascendCalibrator.js" + "?r=" + Game.version);
+      document.head.appendChild(script);
+    };
     Game.EditAscend = function () {
       if (!Game.DebuggingPrestige) {
+        if (Game.loadAscendCalibrator) Game.loadAscendCalibrator();
         Game.DebuggingPrestige = true;
         Game.AscendTimer = 0;
         Game.OnAscend = 1;
@@ -29267,6 +31266,7 @@ Game.Launch = function () {
       if (Game.milkProgress >= 11) Game.Unlock("Kitten analysts");
       if (Game.milkProgress >= 12) Game.Unlock("Kitten executives");
       if (Game.milkProgress >= 13) Game.Unlock("Kitten admins");
+      if (Game.milkProgress >= 14) Game.Unlock("Kitten strategists");
       Game.milkH = Math.min(1, Game.milkProgress) * 0.35;
       Game.milkHd += (Game.milkH - Game.milkHd) * 0.02;
 
@@ -29493,6 +31493,8 @@ Game.Launch = function () {
             Game.Win(Game.BankAchievements[i].name);
         }
 
+        if (Game.elderWrath >= 3) Game.Win("Grandmapocalypse");
+
         var buildingsOwned = 0;
         var mathematician = 1;
         var base10 = 1;
@@ -29570,6 +31572,10 @@ Game.Launch = function () {
         if (minAmount >= 650) {
           Game.Win("Sexcentennial and a half");
           Game.Unlock("Everybutter biscuit");
+        }
+        if (minAmount >= 700) {
+          Game.Win("Septcentennial");
+          Game.Unlock("Personal biscuit");
         }
 
         if (Game.handmadeCookies >= 1000) {
@@ -29685,6 +31691,7 @@ Game.Launch = function () {
           Game.Win("When there's nothing left to add");
         if (Game.UpgradesOwned >= 500) Game.Win("Kaizen");
         if (Game.UpgradesOwned >= 600) Game.Win("Beyond quality");
+        if (Game.UpgradesOwned >= 700) Game.Win("Oft we mar what's well");
         if (buildingsOwned >= 4000 && Game.UpgradesOwned >= 300)
           Game.Win("Polymath");
         if (buildingsOwned >= 8000 && Game.UpgradesOwned >= 400)
@@ -29698,10 +31705,7 @@ Game.Launch = function () {
           if (kittens >= 10) Game.Win("Jellicles");
         }
 
-        if (
-          Game.cookiesEarned >= 10000000000000 &&
-          !Game.HasAchiev("You win a cookie")
-        ) {
+        if (Game.cookiesEarned >= 1e14 && !Game.HasAchiev("You win a cookie")) {
           Game.Win("You win a cookie");
           Game.Earn(1);
         }
@@ -30008,6 +32012,9 @@ Game.Launch = function () {
             classes += " unlocked";
             lastLocked = 0;
             me.locked = 0;
+            if (me.id == 19) {
+              Game.Win("Cookie Clicker");
+            }
           } else {
             classes += " locked";
             lastLocked++;
@@ -30201,8 +32208,8 @@ LAUNCH THIS THING
 
 window.onload = function () {
   if (!Game.ready) {
-    var loadLangAndLaunch = function (lang) {
-      localStorageSet("CookieClickerLang", lang);
+    var loadLangAndLaunch = function (lang, firstLaunch) {
+      if (!firstLaunch) localStorageSet("CookieClickerLang", lang);
 
       //LoadLang('../Cookie Clicker Localization/EN.js',function(lang){return function(){
       LoadLang(
@@ -30226,8 +32233,11 @@ window.onload = function () {
                       ]) +
                       " ===]"
                   );
-                  Game.Load();
-                  //try {Game.Load();}
+                  Game.Load(function () {
+                    Game.Init();
+                    if (firstLaunch) Game.showLangSelection(true);
+                  });
+                  //try {Game.Load(Game.Init);}
                   //catch(err) {console.log('ERROR : '+err.message);}
                 }
               };
@@ -30270,6 +32280,7 @@ window.onload = function () {
           "mouseover",
           (function (lang) {
             return function () {
+              PlaySound("snd/smallTick.mp3", 0.75);
               l("languageSelectHeader").innerHTML = Langs[lang].changeLanguage;
             };
           })(i)
@@ -30278,7 +32289,9 @@ window.onload = function () {
     };
 
     var lang = localStorageGet("CookieClickerLang");
-    if (!lang) showLangSelect(loadLangAndLaunch);
-    else loadLangAndLaunch(lang);
+    if (App && !lang) showLangSelect(loadLangAndLaunch);
+    else if (!lang) {
+      loadLangAndLaunch("EN", true);
+    } else loadLangAndLaunch(lang);
   }
 };

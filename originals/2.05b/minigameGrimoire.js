@@ -1,4 +1,4 @@
-var M = {};
+﻿var M = {};
 M.parent = Game.Objects["Wizard tower"];
 M.parent.minigame = M;
 M.launch = function () {
@@ -512,22 +512,22 @@ M.launch = function () {
       );
       //old formula :
       /*
-            M.magicM=8+Math.min(M.parent.amount,M.parent.level*5)+Math.ceil(M.parent.amount/10);
-            if (M.magicM>200)
-            {
-              //diminishing returns starting at 200, being 5% as fast by 400
-              var x=M.magicM;
-              var top=x-200;
-              top/=200;
-              var top2=top;
-              top*=(1-top/2);
-              if (top2>=1) top=0.5;
-              top=top*0.95+top2*0.05;
-              top*=200;
-              x=top+200;
-              M.magicM=x;
-            }
-            */
+			M.magicM=8+Math.min(M.parent.amount,M.parent.level*5)+Math.ceil(M.parent.amount/10);
+			if (M.magicM>200)
+			{
+				//diminishing returns starting at 200, being 5% as fast by 400
+				var x=M.magicM;
+				var top=x-200;
+				top/=200;
+				var top2=top;
+				top*=(1-top/2);
+				if (top2>=1) top=0.5;
+				top=top*0.95+top2*0.05;
+				top*=200;
+				x=top+200;
+				M.magicM=x;
+			}
+			*/
       M.magic = Math.min(M.magicM, M.magic);
     };
 
